@@ -1,0 +1,72 @@
+<?xml version="1.0" ?>
+<robot name="Hexapod_Robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ==========================================================================
+       ros2_control description for the hexapod.
+
+       Hardware is the Gazebo Sim (gz) system plugin, so the SAME controllers
+       drive the simulated joints and (later) real servos - only the <plugin>
+       swaps out for a hardware driver.
+
+       Joint naming (chain position -> hexapod convention):
+         *_coxa  = joint on base_link  (yaw / swing)         [was Revolute 1,2,3,11,12,15]
+         *_femur = middle joint        (lift)                [was Revolute 5,6,7,13,14,16]
+         *_tibia = outer joint         (knee)                [was Revolute 8,9,10,17,18,19]
+       initial_value = spawn/stance pose (radians). FIRST GUESS - tune visually.
+       ========================================================================== -->
+
+  <!-- params named lower/upper (NOT min/max) to avoid shadowing xacro's
+       built-in min()/max() functions. -->
+  <xacro:macro name="hex_joint" params="name lower upper init">
+    <joint name="${name}">
+      <command_interface name="position">
+        <param name="min">${lower}</param>
+        <param name="max">${upper}</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">${init}</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+  </xacro:macro>
+
+  <ros2_control name="HexapodGazeboSystem" type="system">
+    <hardware>
+      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+    </hardware>
+
+    <!-- ===== Left legs (l1, l2, l3) =====
+         init = clean neutral stance, IK-derived (feet at 0.12 m reach, 0.13 m ride height) -->
+    <xacro:hex_joint name="leg_l1_coxa"  lower="-0.523599" upper="0.523599" init="0.0158"/>
+    <xacro:hex_joint name="leg_l1_femur" lower="-1.570796" upper="0.0"      init="-0.6425"/>
+    <xacro:hex_joint name="leg_l1_tibia" lower="-0.349066" upper="0.698132" init="0.1355"/>
+
+    <xacro:hex_joint name="leg_l2_coxa"  lower="-0.523599" upper="0.523599" init="0.0147"/>
+    <xacro:hex_joint name="leg_l2_femur" lower="-1.570796" upper="0.0"      init="-0.6425"/>
+    <xacro:hex_joint name="leg_l2_tibia" lower="-0.349066" upper="0.698132" init="0.1358"/>
+
+    <xacro:hex_joint name="leg_l3_coxa"  lower="-0.523599" upper="0.523599" init="0.0100"/>
+    <xacro:hex_joint name="leg_l3_femur" lower="-1.570796" upper="0.0"      init="-0.5042"/>
+    <xacro:hex_joint name="leg_l3_tibia" lower="-0.349066" upper="0.698132" init="0.1352"/>
+
+    <!-- ===== Right legs (r1, r2, r3) - mirrored limits/stance ===== -->
+    <xacro:hex_joint name="leg_r1_coxa"  lower="-0.523599" upper="0.523599" init="-0.0104"/>
+    <xacro:hex_joint name="leg_r1_femur" lower="0.0"       upper="1.570796" init="0.6049"/>
+    <xacro:hex_joint name="leg_r1_tibia" lower="-0.698132" upper="0.349066" init="-0.2740"/>
+
+    <xacro:hex_joint name="leg_r2_coxa"  lower="-0.523599" upper="0.523599" init="-0.0108"/>
+    <xacro:hex_joint name="leg_r2_femur" lower="0.0"       upper="1.570796" init="0.6049"/>
+    <xacro:hex_joint name="leg_r2_tibia" lower="-0.698132" upper="0.349066" init="-0.2739"/>
+
+    <xacro:hex_joint name="leg_r3_coxa"  lower="-0.523599" upper="0.523599" init="-0.0038"/>
+    <xacro:hex_joint name="leg_r3_femur" lower="0.0"       upper="1.570796" init="0.6042"/>
+    <xacro:hex_joint name="leg_r3_tibia" lower="-0.698132" upper="0.349066" init="-0.2750"/>
+
+    <!-- ===== Pan/tilt face ===== -->
+    <xacro:hex_joint name="face_pan"  lower="-0.349066" upper="0.349066" init="0.0"/>
+    <xacro:hex_joint name="face_tilt" lower="-0.785398" upper="0.261799" init="0.0"/>
+
+  </ros2_control>
+
+</robot>

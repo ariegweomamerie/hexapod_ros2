@@ -1,0 +1,61 @@
+# ros2_control controller configuration for the hexapod.
+# Loaded by the gz_ros2_control plugin (see Hexapod_Robot.gazebo).
+#
+# - joint_state_broadcaster: publishes /joint_states for all joints
+# - leg_controller:  JointTrajectoryController over the 18 leg joints
+# - face_controller: JointTrajectoryController over the 2 pan/tilt joints
+#
+# JointTrajectoryController is used (not a plain forward controller) because the
+# gait generator will send interpolated trajectories to these controllers later.
+
+controller_manager:
+  ros__parameters:
+    update_rate: 100  # Hz
+    use_sim_time: true
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    leg_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+    face_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+leg_controller:
+  ros__parameters:
+    joints:
+      - leg_l1_coxa
+      - leg_l1_femur
+      - leg_l1_tibia
+      - leg_l2_coxa
+      - leg_l2_femur
+      - leg_l2_tibia
+      - leg_l3_coxa
+      - leg_l3_femur
+      - leg_l3_tibia
+      - leg_r1_coxa
+      - leg_r1_femur
+      - leg_r1_tibia
+      - leg_r2_coxa
+      - leg_r2_femur
+      - leg_r2_tibia
+      - leg_r3_coxa
+      - leg_r3_femur
+      - leg_r3_tibia
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity
+
+face_controller:
+  ros__parameters:
+    joints:
+      - face_pan
+      - face_tilt
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity

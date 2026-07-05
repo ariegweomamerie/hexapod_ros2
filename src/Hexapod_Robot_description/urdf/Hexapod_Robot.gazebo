@@ -1,0 +1,164 @@
+<?xml version="1.0" ?>
+<robot name="Hexapod_Robot" xmlns:xacro="http://www.ros.org/wiki/xacro" >
+
+<xacro:property name="body_color" value="Gazebo/Silver" />
+
+<gazebo reference="base_link">
+  <material>${body_color}</material>
+  <mu1>1.0</mu1>
+  <mu2>1.0</mu2>
+  <self_collide>true</self_collide>
+  <gravity>true</gravity>
+</gazebo>
+
+<gazebo reference="left_hip_swing_forward_back1_link_1">
+  <material>${body_color}</material>
+  <mu1>1.0</mu1>
+  <mu2>1.0</mu2>
+  <self_collide>true</self_collide>
+</gazebo>
+
+<gazebo reference="left_hip_swing_forward_back2_link_1">
+  <material>${body_color}</material>
+  <mu1>1.0</mu1>
+  <mu2>1.0</mu2>
+  <self_collide>true</self_collide>
+</gazebo>
+
+<gazebo reference="left_hip_swing_forward_back3_link_1">
+  <material>${body_color}</material>
+  <mu1>1.0</mu1>
+  <mu2>1.0</mu2>
+  <self_collide>true</self_collide>
+</gazebo>
+
+<gazebo reference="left_tibia_knee1_link_1">
+  <material>${body_color}</material>
+  <mu1>1.0</mu1>
+  <mu2>1.0</mu2>
+  <self_collide>true</self_collide>
+</gazebo>
+
+<gazebo reference="left_tibia_knee2_link_1">
+  <material>${body_color}</material>
+  <mu1>1.0</mu1>
+  <mu2>1.0</mu2>
+  <self_collide>true</self_collide>
+</gazebo>
+
+<gazebo reference="left_tibia_knee3_link_1">
+  <material>${body_color}</material>
+  <mu1>1.0</mu1>
+  <mu2>1.0</mu2>
+  <self_collide>true</self_collide>
+</gazebo>
+
+<gazebo reference="femur_lift_leg3_link_1">
+  <material>${body_color}</material>
+  <mu1>1.0</mu1>
+  <mu2>1.0</mu2>
+  <self_collide>true</self_collide>
+</gazebo>
+
+<gazebo reference="femur_lift_leg2_link_1">
+  <material>${body_color}</material>
+  <mu1>1.0</mu1>
+  <mu2>1.0</mu2>
+  <self_collide>true</self_collide>
+</gazebo>
+
+<gazebo reference="femur_lift_leg1_link_1">
+  <material>${body_color}</material>
+  <mu1>1.0</mu1>
+  <mu2>1.0</mu2>
+  <self_collide>true</self_collide>
+</gazebo>
+
+<gazebo reference="right_hip_swing_forward_back1_link_1">
+  <material>${body_color}</material>
+  <mu1>1.0</mu1>
+  <mu2>1.0</mu2>
+  <self_collide>true</self_collide>
+</gazebo>
+
+<gazebo reference="right_hip_swing_forward_back2_link_1">
+  <material>${body_color}</material>
+  <mu1>1.0</mu1>
+  <mu2>1.0</mu2>
+  <self_collide>true</self_collide>
+</gazebo>
+
+<gazebo reference="right_tibia_knee1_link_1">
+  <material>${body_color}</material>
+  <mu1>1.0</mu1>
+  <mu2>1.0</mu2>
+  <self_collide>true</self_collide>
+</gazebo>
+
+<gazebo reference="right_tibia_knee2_link_1">
+  <material>${body_color}</material>
+  <mu1>1.0</mu1>
+  <mu2>1.0</mu2>
+  <self_collide>true</self_collide>
+</gazebo>
+
+<gazebo reference="right_hip_swing_forward_back3_link_1">
+  <material>${body_color}</material>
+  <mu1>1.0</mu1>
+  <mu2>1.0</mu2>
+  <self_collide>true</self_collide>
+</gazebo>
+
+<gazebo reference="right_tibia_knee3_link_1">
+  <material>${body_color}</material>
+  <mu1>1.0</mu1>
+  <mu2>1.0</mu2>
+  <self_collide>true</self_collide>
+</gazebo>
+
+<gazebo reference="femur_right_leg1_link_1">
+  <material>${body_color}</material>
+  <mu1>1.0</mu1>
+  <mu2>1.0</mu2>
+  <self_collide>true</self_collide>
+</gazebo>
+
+<gazebo reference="femur_right_leg2_link_1">
+  <material>${body_color}</material>
+  <mu1>1.0</mu1>
+  <mu2>1.0</mu2>
+  <self_collide>true</self_collide>
+</gazebo>
+
+<gazebo reference="femur_right_leg3_link_1">
+  <material>${body_color}</material>
+  <mu1>1.0</mu1>
+  <mu2>1.0</mu2>
+  <self_collide>true</self_collide>
+</gazebo>
+
+<gazebo reference="face_bracet_base_link_1">
+  <material>${body_color}</material>
+  <mu1>1.0</mu1>
+  <mu2>1.0</mu2>
+  <self_collide>true</self_collide>
+</gazebo>
+
+<gazebo reference="face_link_1">
+  <material>${body_color}</material>
+  <mu1>1.0</mu1>
+  <mu2>1.0</mu2>
+  <self_collide>true</self_collide>
+</gazebo>
+
+<!-- gz_ros2_control: runs a controller_manager inside Gazebo and exposes the
+     joints declared in Hexapod_Robot.ros2control. Controllers are configured
+     from config/controllers.yaml. -->
+<gazebo>
+  <plugin filename="gz_ros2_control-system"
+          name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+    <parameters>$(find Hexapod_Robot_description)/config/controllers.yaml</parameters>
+  </plugin>
+</gazebo>
+
+</robot>
