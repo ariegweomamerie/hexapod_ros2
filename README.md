@@ -49,7 +49,7 @@ This repository contains everything needed to simulate such a robot:
 - a **3D model** of the robot (its shape, joints and mass),
 - the **control system** that moves its 20 motors,
 - a **walking brain** (the *gait*) that turns "go forward" into coordinated leg motion,
-- **sensors** (an IMU for orientation, foot-contact state),
+- **sensors** — an IMU for orientation, a forward-facing camera on the head, and foot-contact state,
 - and **launch files** that start it all with one command.
 
 You run it in **Gazebo**, a physics simulator, so you can develop and test the
@@ -87,7 +87,12 @@ The robot has **20 motors** (called *joints*):
   - **coxa** — swings the whole leg left/right (like a hip),
   - **femur** — lifts the leg up/down (the thigh),
   - **tibia** — bends the lower leg (the knee).
-- a **2-joint "face"** (pan + tilt) at the front, for a future camera.
+- a **2-joint "face"** (pan + tilt) at the front, carrying a forward-facing **camera**.
+
+**Sensors:** an **IMU** in the body (orientation, rotation rate, acceleration) and a
+**camera** on the pan/tilt head (640×480 @ 30 Hz, 60° field of view). Because the
+camera is on the head, panning/tilting the face points the camera. There is no
+lidar — vision comes from the camera.
 
 So: 6 legs × 3 joints = 18, plus 2 for the face = **20 joints**.
 
@@ -194,6 +199,7 @@ You'll see `Kinematics ready. Gait running.` — the robot is now ready to walk.
 cd ~/hexapod_ros_robot_ws
 ./run_rviz.sh
 ```
+RViz shows the robot model plus a **Face Camera** panel with the live camera feed.
 
 ---
 
@@ -225,6 +231,20 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard
 ```bash
 ros2 topic echo /foot_contacts   # which feet are on the ground (1=down, 0=lifted)
 ros2 topic echo /imu             # body orientation, rotation rate, acceleration
+ros2 topic hz /face_camera/image # camera stream rate (~30 Hz)
+```
+
+**See through the camera** (or use the Face Camera panel in RViz):
+```bash
+ros2 run rqt_image_view rqt_image_view /face_camera/image
+```
+
+**Move the head (pan/tilt):** the face joints are driven by `face_controller`.
+Angles are in radians — pan −0.35…0.35 (left is positive), tilt −0.78…0.26
+(down is negative):
+```bash
+ros2 topic pub --once /face_controller/joint_trajectory trajectory_msgs/msg/JointTrajectory \
+  "{joint_names: [face_pan, face_tilt], points: [{positions: [0.3, -0.2], time_from_start: {sec: 1}}]}"
 ```
 
 ---
@@ -240,7 +260,7 @@ ros2 topic echo /imu             # body orientation, rotation rate, acceleration
 ```
 
 1. **Description** (`Hexapod_Robot_description`) — the robot's 3D model (URDF/xacro):
-   links, joints, meshes, foot frames, the simulated **IMU**, and the Gazebo
+   links, joints, meshes, foot frames, the simulated **IMU** and **face camera**, and the Gazebo
    control plugin.
 2. **Kinematics** — for each leg, given a desired **foot position**, it computes the
    three joint angles that put the foot there (*inverse kinematics*, using KDL).
@@ -259,7 +279,7 @@ ros2 topic echo /imu             # body orientation, rotation rate, acceleration
 hexapod_ros_robot_ws/
 ├── src/
 │   ├── Hexapod_Robot_description/   # the robot model + simulation setup
-│   │   ├── urdf/                    # robot model, ros2_control, Gazebo, IMU, odom
+│   │   ├── urdf/                    # robot model, ros2_control, Gazebo, IMU, camera, odom
 │   │   ├── meshes/                  # 3D shapes for each part
 │   │   ├── config/                  # controllers, RViz, ROS–Gazebo bridge
 │   │   └── launch/                  # display.launch.py, gazebo.launch.py
@@ -314,7 +334,8 @@ running and prints `Gait running`, and that you're publishing to `/cmd_vel`.
 - [x] Intuitive `/cmd_vel` (forward = `linear.x`)
 - [x] IMU + odometry + software foot-contact state
 - [ ] Faster, drift-free walking (reduce foot slip)
-- [ ] Face camera
+- [x] Face camera on the pan/tilt head
+- [ ] Simple head (pan/tilt) command interface
 - [ ] Keyboard/joystick teleop presets
 - [ ] Real-hardware servo interface
 

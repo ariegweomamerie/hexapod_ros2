@@ -26,6 +26,18 @@
   gz_type_name: "gz.msgs.IMU"
   direction: GZ_TO_ROS
 
+# Face camera -> ROS sensor_msgs/Image + CameraInfo (streaming video frames).
+- ros_topic_name: "/face_camera/image"
+  gz_topic_name: "/face_camera/image"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  direction: GZ_TO_ROS
+- ros_topic_name: "/face_camera/camera_info"
+  gz_topic_name: "/face_camera/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  direction: GZ_TO_ROS
+
 # Per-foot contact sensors -> ROS ros_gz_interfaces/Contacts on /contact/leg_*.
 - ros_topic_name: "/contact/leg_l1"
   gz_topic_name: "/contact/leg_l1"

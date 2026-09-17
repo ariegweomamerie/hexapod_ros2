@@ -169,6 +169,22 @@
   <mu1>1.0</mu1>
   <mu2>1.0</mu2>
   <self_collide>true</self_collide>
+  <!-- Forward-facing camera on the pan/tilt head (simulates the Pi camera).
+       <pose> rpy aims the optical axis toward the robot's front; tune if needed.
+       Publishes /face_camera/image and /face_camera/camera_info. -->
+  <sensor name="face_camera" type="camera">
+    <!-- offset forward + up so the camera clears the robot's own head/body -->
+    <pose>0 -0.09 0.07 0 0.15 -1.5708</pose>
+    <always_on>1</always_on>
+    <update_rate>30</update_rate>
+    <topic>face_camera/image</topic>
+    <gz_frame_id>face_link_1</gz_frame_id>
+    <camera>
+      <horizontal_fov>1.0472</horizontal_fov>
+      <image><width>640</width><height>480</height><format>R8G8B8</format></image>
+      <clip><near>0.05</near><far>15.0</far></clip>
+    </camera>
+  </sensor>
 </gazebo>
 
 <!-- gz_ros2_control: runs a controller_manager inside Gazebo and exposes the
@@ -189,6 +205,13 @@
 <!-- Contact system: drives the per-foot <sensor type="contact"> (foot-ground touch). -->
 <gazebo>
   <plugin filename="gz-sim-contact-system" name="gz::sim::systems::Contact"/>
+</gazebo>
+
+<!-- Sensors system: renders camera sensors (the face camera). Needs OpenGL. -->
+<gazebo>
+  <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+    <render_engine>ogre2</render_engine>
+  </plugin>
 </gazebo>
 
 <!-- Odometry: publishes odom->base_footprint so RViz (fixed frame "odom") shows
