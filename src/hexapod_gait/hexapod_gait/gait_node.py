@@ -24,41 +24,46 @@ from builtin_interfaces.msg import Duration
 
 from hexapod_gait.kinematics import HexapodKinematics, LEGS, JOINTS_PER_LEG
 
-# The legs are short relative to the body, so a stance that looks good standing
-# (nearly straight legs) has no room to stroke, and a stance that can walk must be
-# folded. We therefore use TWO poses:
-#   * STAND — tall, un-bent, wide footprint. Used when idle (looks natural).
-#   * WALK  — folded, feet tucked in, so the legs have room to stride.
-# The robot crouches from STAND to WALK when it starts moving, and rises back when
-# it stops. Foot positions are in the base_footprint frame.
+# Both poses share ONE mirror-symmetric radial footprint (symmetric left/right and
+# front/back about the body centre x=0.115, y=0.115):
+#   front legs splayed 35 deg forward, middle legs straight out, rear legs 35 deg back.
+# The coxa joints are re-zeroed in the URDF to exactly these directions, so every
+# coxa is 0 in both poses and keeps its full +-30 deg for striding.
+#   * STAND — feet 150 mm from each hip, body 143 mm high. Used when idle.
+#             Tripod stability margin 89 mm, joint-limit margin 16.6 deg.
+#   * WALK  — feet 120 mm from each hip, same 143 mm height. The legs pull in to
+#             give room for full 0.10 m strides (forward, sideways and turning).
+# Starting/stopping therefore only moves the feet radially in or out — no height
+# change and no twisting. Foot positions are in the base_footprint frame.
 
-# WALK pose (feet at ~0.12 m reach, 0.13 m ride height) — gait offsets are added
-# to these; the folded legs give clearance for the stride.
+# WALK pose — gait offsets are added to these.
 WALK_HOME = {
-    "leg_l1": (0.3359, -0.0557, -0.1300),
-    "leg_l2": (0.3491,  0.1365, -0.1300),
-    "leg_l3": (0.3318,  0.2957, -0.1300),
-    "leg_r1": (-0.0902, -0.0853, -0.1300),
-    "leg_r2": (-0.1203,  0.1025, -0.1300),
-    "leg_r3": (-0.1130,  0.2476, -0.1300),
+    "leg_l1": (0.3213, -0.0838, -0.1300),
+    "leg_l2": (0.3510,  0.1150, -0.1300),
+    "leg_l3": (0.3213,  0.3138, -0.1300),
+    "leg_r1": (-0.0913, -0.0838, -0.1300),
+    "leg_r2": (-0.1210,  0.1150, -0.1300),
+    "leg_r3": (-0.0913,  0.3138, -0.1300),
 }
-# STAND pose (feet at ~0.15 m reach, 0.10 m ride height) — nearly straight legs
-# (femur ~10 deg) for a clean idle posture.
+# STAND pose.
 STAND_HOME = {
-    "leg_l1": (0.3641, -0.0659, -0.1000),
-    "leg_l2": (0.3786,  0.1418, -0.1000),
-    "leg_l3": (0.3590,  0.3084, -0.1000),
-    "leg_r1": (-0.1145, -0.1029, -0.1000),
-    "leg_r2": (-0.1502,  0.0993, -0.1000),
-    "leg_r3": (-0.1430,  0.2482, -0.1000),
+    "leg_l1": (0.3459, -0.1010, -0.1300),
+    "leg_l2": (0.3810,  0.1150, -0.1300),
+    "leg_l3": (0.3459,  0.3310, -0.1300),
+    "leg_r1": (-0.1159, -0.1010, -0.1300),
+    "leg_r2": (-0.1510,  0.1150, -0.1300),
+    "leg_r3": (-0.1159,  0.3310, -0.1300),
 }
+# STAND joint angles (coxa, femur, tibia). Also the IK warm-start seed.
+# Femur/tibia differ slightly between legs because the CAD femur/tibia zeros are
+# not identical; the resulting leg SHAPES are mirror-symmetric.
 STAND_Q = {
-    "leg_l1": (0.0043, -0.2271, 0.0203),
-    "leg_l2": (0.0039, -0.2272, 0.0207),
-    "leg_l3": (-0.0009, -0.0889, 0.0200),
-    "leg_r1": (0.0038, 0.1926, -0.1598),
-    "leg_r2": (0.0039, 0.1927, -0.1598),
-    "leg_r3": (0.0021, 0.1927, -0.1612),
+    "leg_l1": (0.0, -0.5920, 0.2684),
+    "leg_l2": (0.0, -0.5921, 0.2687),
+    "leg_l3": (0.0, -0.4538, 0.2681),
+    "leg_r1": (0.0, 0.5557, -0.4075),
+    "leg_r2": (0.0, 0.5557, -0.4075),
+    "leg_r3": (0.0, 0.5556, -0.4088),
 }
 
 # Alternating tripod grouping (B is a half-cycle out of phase with A).

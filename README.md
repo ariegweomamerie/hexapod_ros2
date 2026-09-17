@@ -100,6 +100,20 @@ So: 6 legs × 3 joints = 18, plus 2 for the face = **20 joints**.
 direction in its coordinate frame). When you command "forward", it walks toward
 its face — just like you'd expect.
 
+**How it stands.** The legs use a classic, mirror-symmetric hexapod stance: the
+middle legs point straight out, and the front and rear legs are splayed 35°
+forward and back. The body stands 143 mm high, level, with all six feet on the
+ground. Both sides are exact mirror images, which keeps the body stable (the centre
+of mass stays well inside every walking tripod). By default the **face looks straight
+ahead and level**, so the camera sees what's in front of the robot.
+
+**Joint zero = neutral.** Every coxa angle of 0 means "leg points in its designed
+direction", and a face angle of 0/0 means "looking straight ahead". The original
+CAD export placed each leg (and the head) at slightly different angles. Those
+offsets are folded into the robot model, so angle 0 always means the neutral pose.
+The femur/tibia zeros still differ a few degrees between legs (the leg *shapes*
+are symmetric); calibrate the real servos accordingly.
+
 **Why "tripod" gait?** The six legs are split into **two groups of three**
 (two tripods) that take turns. While one tripod is lifted and swinging forward,
 the other three stay planted on the ground. Because three feet are always down,
@@ -240,11 +254,17 @@ ros2 run rqt_image_view rqt_image_view /face_camera/image
 ```
 
 **Move the head (pan/tilt):** the face joints are driven by `face_controller`.
-Angles are in radians — pan −0.35…0.35 (left is positive), tilt −0.78…0.26
-(down is negative):
+Angles are in radians, and **0, 0 = looking straight ahead**. Pan ranges
+−0.38…0.32 (left is positive); tilt ranges −0.42…0.62 (up is positive, down is
+negative):
 ```bash
+# look left and slightly down
 ros2 topic pub --once /face_controller/joint_trajectory trajectory_msgs/msg/JointTrajectory \
-  "{joint_names: [face_pan, face_tilt], points: [{positions: [0.3, -0.2], time_from_start: {sec: 1}}]}"
+  "{joint_names: [face_pan, face_tilt], points: [{positions: [0.25, -0.2], time_from_start: {sec: 1}}]}"
+
+# back to straight ahead
+ros2 topic pub --once /face_controller/joint_trajectory trajectory_msgs/msg/JointTrajectory \
+  "{joint_names: [face_pan, face_tilt], points: [{positions: [0.0, 0.0], time_from_start: {sec: 1}}]}"
 ```
 
 ---
@@ -268,8 +288,11 @@ ros2 topic pub --once /face_controller/joint_trajectory trajectory_msgs/msg/Join
    foot follows a **D-shaped path** (a flat push along the ground, then a lifted
    swing forward). It converts those foot paths into joint angles and streams them
    to the controllers ~50 times per second.
-4. **Two poses** — because the legs are short, the robot uses a tall, relaxed
-   **stand** pose when idle and folds into a **walk** pose when moving.
+4. **Two poses, one footprint** — both poses use the same symmetric stance
+   directions at the same 143 mm body height. **Stand** (idle) places the feet
+   150 mm from each hip for a wide, stable base. **Walk** pulls them in to 120 mm so
+   every leg has room for full strides. Starting or stopping only moves the feet in
+   or out — no height change, no twisting.
 
 ---
 
@@ -335,6 +358,7 @@ running and prints `Gait running`, and that you're publishing to `/cmd_vel`.
 - [x] IMU + odometry + software foot-contact state
 - [ ] Faster, drift-free walking (reduce foot slip)
 - [x] Face camera on the pan/tilt head
+- [x] Mirror-symmetric standing pose; face looks straight ahead by default
 - [ ] Simple head (pan/tilt) command interface
 - [ ] Keyboard/joystick teleop presets
 - [ ] Real-hardware servo interface

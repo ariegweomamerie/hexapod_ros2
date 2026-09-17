@@ -169,12 +169,13 @@
   <mu1>1.0</mu1>
   <mu2>1.0</mu2>
   <self_collide>true</self_collide>
-  <!-- Forward-facing camera on the pan/tilt head (simulates the Pi camera).
-       <pose> rpy aims the optical axis toward the robot's front; tune if needed.
-       Publishes /face_camera/image and /face_camera/camera_info. -->
+  <!-- Camera mounted on the face (simulates the Pi camera). Rigidly aligned with
+       the face's front surface: optical axis = face front normal, image-up = face
+       up, placed 12 mm in front of the screen centre. So the camera always looks
+       exactly where the face looks; with face_pan = face_tilt = 0 that is straight
+       ahead and level. Publishes /face_camera/image and /face_camera/camera_info. -->
   <sensor name="face_camera" type="camera">
-    <!-- offset forward + up so the camera clears the robot's own head/body -->
-    <pose>0 -0.09 0.07 0 0.15 -1.5708</pose>
+    <pose>0.032470 -0.042942 0.035805 -0.000309 -0.362146 -1.599897</pose>
     <always_on>1</always_on>
     <update_rate>30</update_rate>
     <topic>face_camera/image</topic>

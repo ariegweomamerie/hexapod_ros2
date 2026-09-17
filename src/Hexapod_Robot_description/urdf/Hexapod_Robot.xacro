@@ -457,8 +457,15 @@
   </collision>
 </link>
 
+<!-- COXA joints are RE-ZEROED to the leg design directions, so coxa = 0 means:
+     front legs splayed 35 deg forward, middle legs straight out, rear legs 35 deg
+     back - a mirror-symmetric (left/right and front/back) footprint. The CAD
+     export had each leg at a slightly different angle (up to 34 deg apart between
+     twins); that per-leg offset is folded into the origin yaw below. Limits stay
+     +-30 deg, now centred on the design direction (servo horn centred on the leg's
+     neutral), which leaves full stride range for walking.                        -->
 <joint name="leg_l1_coxa" type="revolute">
-  <origin xyz="0.223004 -0.015003 0.080704" rpy="0 0 0"/>
+  <origin xyz="0.223004 -0.015003 0.080704" rpy="0 0 -0.259239"/>
   <parent link="base_link"/>
   <child link="left_hip_swing_forward_back1_link_1"/>
   <axis xyz="0.0 0.0 1.0"/>
@@ -466,7 +473,7 @@
 </joint>
 
 <joint name="leg_l2_coxa" type="revolute">
-  <origin xyz="0.231004 0.114997 0.080704" rpy="0 0 0"/>
+  <origin xyz="0.231004 0.114997 0.080704" rpy="0 0 -0.174847"/>
   <parent link="base_link"/>
   <child link="left_hip_swing_forward_back2_link_1"/>
   <axis xyz="0.0 0.0 1.0"/>
@@ -474,7 +481,7 @@
 </joint>
 
 <joint name="leg_l3_coxa" type="revolute">
-  <origin xyz="0.223004 0.244997 0.080704" rpy="0 0 0"/>
+  <origin xyz="0.223004 0.244997 0.080704" rpy="0 0 0.174892"/>
   <parent link="base_link"/>
   <child link="left_hip_swing_forward_back3_link_1"/>
   <axis xyz="0.0 0.0 1.0"/>
@@ -530,7 +537,7 @@
 </joint>
 
 <joint name="leg_r1_coxa" type="revolute">
-  <origin xyz="0.007004 -0.015003 0.080704" rpy="0 0 0"/>
+  <origin xyz="0.007004 -0.015003 0.080704" rpy="0 0 -0.012547"/>
   <parent link="base_link"/>
   <child link="right_hip_swing_forward_back1_link_1"/>
   <axis xyz="0.0 0.0 1.0"/>
@@ -538,7 +545,7 @@
 </joint>
 
 <joint name="leg_r2_coxa" type="revolute">
-  <origin xyz="-0.000996 0.114997 0.080704" rpy="0 0 0"/>
+  <origin xyz="-0.000996 0.114997 0.080704" rpy="0 0 -0.101613"/>
   <parent link="base_link"/>
   <child link="right_hip_swing_forward_back2_link_1"/>
   <axis xyz="0.0 0.0 1.0"/>
@@ -562,7 +569,7 @@
 </joint>
 
 <joint name="leg_r3_coxa" type="revolute">
-  <origin xyz="0.007004 0.244997 0.080704" rpy="0 0 0"/>
+  <origin xyz="0.007004 0.244997 0.080704" rpy="0 0 -0.588333"/>
   <parent link="base_link"/>
   <child link="right_hip_swing_forward_back3_link_1"/>
   <axis xyz="0.0 0.0 1.0"/>
@@ -601,20 +608,28 @@
   <limit upper="0.349066" lower="-0.698132" effort="100" velocity="100"/>
 </joint>
 
+<!-- Face joints are RE-ZEROED so that face_pan = 0, face_tilt = 0 means the face
+     (and its camera) looks STRAIGHT AHEAD and LEVEL. In the CAD export the zero
+     pose looked 20.75 deg up and 1.67 deg right; that offset is folded into the
+     joint origins below (pan origin yaw +0.029124, tilt origin = -0.362146 rad
+     about the tilt axis). The physical range of motion is unchanged - the limits
+     are the original ones re-expressed around the new zero:
+       pan  : -21.67 .. +18.33 deg   (left is +)
+       tilt : -24.25 .. +35.75 deg   (up is +, down is -)                         -->
 <joint name="face_pan" type="revolute">
-  <origin xyz="0.124241 0.005792 0.027095" rpy="0 0 0"/>
+  <origin xyz="0.124241 0.005792 0.027095" rpy="0 0 0.029124"/>
   <parent link="base_link"/>
   <child link="face_bracet_base_link_1"/>
   <axis xyz="-0.0 -0.0 1.0"/>
-  <limit upper="0.349066" lower="-0.349066" effort="100" velocity="100"/>
+  <limit upper="0.319942" lower="-0.378190" effort="100" velocity="100"/>
 </joint>
 
 <joint name="face_tilt" type="revolute">
-  <origin xyz="-0.035829 -0.055054 0.01468" rpy="0 0 0"/>
+  <origin xyz="-0.035829 -0.055054 0.01468" rpy="0.362002 -0.010440 -0.001911"/>
   <parent link="face_bracet_base_link_1"/>
   <child link="face_link_1"/>
   <axis xyz="-0.999566 0.029467 0.0"/>
-  <limit upper="0.261799" lower="-0.785398" effort="100" velocity="100"/>
+  <limit upper="0.623945" lower="-0.423252" effort="100" velocity="100"/>
 </joint>
 
 <!-- ==========================================================================
