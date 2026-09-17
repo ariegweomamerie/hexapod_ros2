@@ -1,0 +1,1148 @@
+{
+  "stage": "1 - stable basic gait",
+  "date": "2026-09-17T09:40:50",
+  "passed": false,
+  "required_passed": 56,
+  "required_total": 57,
+  "checks": [
+    {
+      "group": "Stand (initial)",
+      "name": "Body height",
+      "passed": true,
+      "measured": "143.0 mm",
+      "criterion": "143 \u00b1 10 mm",
+      "required": true
+    },
+    {
+      "group": "Stand (initial)",
+      "name": "Body level (ground truth)",
+      "passed": true,
+      "measured": "max tilt 0.00\u00b0",
+      "criterion": "\u2264 2\u00b0",
+      "required": true
+    },
+    {
+      "group": "Stand (initial)",
+      "name": "Body level (IMU)",
+      "passed": true,
+      "measured": "max tilt 0.00\u00b0",
+      "criterion": "\u2264 2\u00b0",
+      "required": true
+    },
+    {
+      "group": "Stand (initial)",
+      "name": "Joints at stand pose",
+      "passed": true,
+      "measured": "max error 0.02\u00b0",
+      "criterion": "\u2264 1\u00b0",
+      "required": true
+    },
+    {
+      "group": "Stand (initial)",
+      "name": "All six feet on the ground",
+      "passed": true,
+      "measured": "highest foot 13.0 mm",
+      "criterion": "all < 19 mm",
+      "required": true
+    },
+    {
+      "group": "Stand (initial)",
+      "name": "/foot_contacts all down",
+      "passed": true,
+      "measured": "400/400 msgs all 1",
+      "criterion": "all msgs all 1",
+      "required": true
+    },
+    {
+      "group": "Stand (initial)",
+      "name": "Holds still",
+      "passed": true,
+      "measured": "drift 0.0 mm, +0.00\u00b0",
+      "criterion": "\u2264 5 mm, \u2264 0.5\u00b0",
+      "required": true
+    },
+    {
+      "group": "Walk forward",
+      "name": "Moves in the commanded direction",
+      "passed": true,
+      "measured": "+27.7 cm (+2.77 cm/s)",
+      "criterion": "\u2265 +10 cm in 10 s",
+      "required": true
+    },
+    {
+      "group": "Walk forward",
+      "name": "Walks straight",
+      "passed": true,
+      "measured": "sideways +0.8 cm",
+      "criterion": "\u2264 15% of forward distance",
+      "required": true
+    },
+    {
+      "group": "Walk forward",
+      "name": "Holds heading",
+      "passed": true,
+      "measured": "-0.5\u00b0",
+      "criterion": "\u2264 5\u00b0",
+      "required": true
+    },
+    {
+      "group": "Walk forward",
+      "name": "Body stable while walking",
+      "passed": true,
+      "measured": "max tilt 0.1\u00b0, height 132\u2013144 mm",
+      "criterion": "tilt \u2264 5\u00b0, height 143 \u00b1 20 mm",
+      "required": true
+    },
+    {
+      "group": "Walk forward",
+      "name": "Tripod gait (feet in the air)",
+      "passed": true,
+      "measured": "100% samples OK, max 3 lifted",
+      "criterion": "only one tripod lifted, 100%",
+      "required": true
+    },
+    {
+      "group": "Walk forward",
+      "name": "Leg command stream rate",
+      "passed": true,
+      "measured": "50.0 Hz",
+      "criterion": "50 \u00b1 5 Hz",
+      "required": true
+    },
+    {
+      "group": "Walk backward",
+      "name": "Moves in the commanded direction",
+      "passed": true,
+      "measured": "-27.4 cm (-2.74 cm/s)",
+      "criterion": "\u2264 \u221210 cm in 10 s",
+      "required": true
+    },
+    {
+      "group": "Walk backward",
+      "name": "Walks straight",
+      "passed": true,
+      "measured": "sideways +1.2 cm",
+      "criterion": "\u2264 15% of forward distance",
+      "required": true
+    },
+    {
+      "group": "Walk backward",
+      "name": "Holds heading",
+      "passed": true,
+      "measured": "-1.1\u00b0",
+      "criterion": "\u2264 5\u00b0",
+      "required": true
+    },
+    {
+      "group": "Walk backward",
+      "name": "Body stable while walking",
+      "passed": true,
+      "measured": "max tilt 0.1\u00b0, height 132\u2013144 mm",
+      "criterion": "tilt \u2264 5\u00b0, height 143 \u00b1 20 mm",
+      "required": true
+    },
+    {
+      "group": "Walk backward",
+      "name": "Tripod gait (feet in the air)",
+      "passed": true,
+      "measured": "100% samples OK, max 3 lifted",
+      "criterion": "only one tripod lifted, 100%",
+      "required": true
+    },
+    {
+      "group": "Walk backward",
+      "name": "Leg command stream rate",
+      "passed": true,
+      "measured": "50.0 Hz",
+      "criterion": "50 \u00b1 5 Hz",
+      "required": true
+    },
+    {
+      "group": "Turn left",
+      "name": "Turns in the commanded direction",
+      "passed": true,
+      "measured": "+60.7\u00b0 (+6.08\u00b0/s)",
+      "criterion": "\u2265 +10\u00b0 in 10 s",
+      "required": true
+    },
+    {
+      "group": "Turn left",
+      "name": "Turns in place",
+      "passed": true,
+      "measured": "body centre moved 1.1 cm",
+      "criterion": "\u2264 5 cm",
+      "required": true
+    },
+    {
+      "group": "Turn left",
+      "name": "Body stable while walking",
+      "passed": true,
+      "measured": "max tilt 0.0\u00b0, height 132\u2013144 mm",
+      "criterion": "tilt \u2264 5\u00b0, height 143 \u00b1 20 mm",
+      "required": true
+    },
+    {
+      "group": "Turn left",
+      "name": "Tripod gait (feet in the air)",
+      "passed": true,
+      "measured": "100% samples OK, max 3 lifted",
+      "criterion": "only one tripod lifted, 100%",
+      "required": true
+    },
+    {
+      "group": "Turn left",
+      "name": "Leg command stream rate",
+      "passed": true,
+      "measured": "50.0 Hz",
+      "criterion": "50 \u00b1 5 Hz",
+      "required": true
+    },
+    {
+      "group": "Turn right",
+      "name": "Turns in the commanded direction",
+      "passed": true,
+      "measured": "-59.2\u00b0 (-5.92\u00b0/s)",
+      "criterion": "\u2264 \u221210\u00b0 in 10 s",
+      "required": true
+    },
+    {
+      "group": "Turn right",
+      "name": "Turns in place",
+      "passed": true,
+      "measured": "body centre moved 0.9 cm",
+      "criterion": "\u2264 5 cm",
+      "required": true
+    },
+    {
+      "group": "Turn right",
+      "name": "Body stable while walking",
+      "passed": true,
+      "measured": "max tilt 0.0\u00b0, height 132\u2013144 mm",
+      "criterion": "tilt \u2264 5\u00b0, height 143 \u00b1 20 mm",
+      "required": true
+    },
+    {
+      "group": "Turn right",
+      "name": "Tripod gait (feet in the air)",
+      "passed": true,
+      "measured": "100% samples OK, max 3 lifted",
+      "criterion": "only one tripod lifted, 100%",
+      "required": true
+    },
+    {
+      "group": "Turn right",
+      "name": "Leg command stream rate",
+      "passed": true,
+      "measured": "50.1 Hz",
+      "criterion": "50 \u00b1 5 Hz",
+      "required": true
+    },
+    {
+      "group": "Strafe left",
+      "name": "Moves in the commanded direction",
+      "passed": true,
+      "measured": "+23.5 cm sideways",
+      "criterion": "\u2265 +8 cm in 8 s",
+      "required": true
+    },
+    {
+      "group": "Strafe left",
+      "name": "Moves sideways only",
+      "passed": true,
+      "measured": "forward +0.3 cm, yaw -0.6\u00b0",
+      "criterion": "forward \u2264 25% of sideways, yaw \u2264 5\u00b0",
+      "required": true
+    },
+    {
+      "group": "Strafe left",
+      "name": "Body stable while walking",
+      "passed": true,
+      "measured": "max tilt 0.1\u00b0, height 132\u2013144 mm",
+      "criterion": "tilt \u2264 5\u00b0, height 143 \u00b1 20 mm",
+      "required": true
+    },
+    {
+      "group": "Strafe left",
+      "name": "Tripod gait (feet in the air)",
+      "passed": true,
+      "measured": "100% samples OK, max 3 lifted",
+      "criterion": "only one tripod lifted, 100%",
+      "required": true
+    },
+    {
+      "group": "Strafe left",
+      "name": "Leg command stream rate",
+      "passed": true,
+      "measured": "50.0 Hz",
+      "criterion": "50 \u00b1 5 Hz",
+      "required": true
+    },
+    {
+      "group": "Strafe right",
+      "name": "Moves in the commanded direction",
+      "passed": true,
+      "measured": "-20.0 cm sideways",
+      "criterion": "\u2264 \u22128 cm in 8 s",
+      "required": true
+    },
+    {
+      "group": "Strafe right",
+      "name": "Moves sideways only",
+      "passed": true,
+      "measured": "forward -0.0 cm, yaw +0.5\u00b0",
+      "criterion": "forward \u2264 25% of sideways, yaw \u2264 5\u00b0",
+      "required": true
+    },
+    {
+      "group": "Strafe right",
+      "name": "Body stable while walking",
+      "passed": true,
+      "measured": "max tilt 0.1\u00b0, height 132\u2013144 mm",
+      "criterion": "tilt \u2264 5\u00b0, height 143 \u00b1 20 mm",
+      "required": true
+    },
+    {
+      "group": "Strafe right",
+      "name": "Tripod gait (feet in the air)",
+      "passed": true,
+      "measured": "100% samples OK, max 3 lifted",
+      "criterion": "only one tripod lifted, 100%",
+      "required": true
+    },
+    {
+      "group": "Strafe right",
+      "name": "Leg command stream rate",
+      "passed": true,
+      "measured": "50.1 Hz",
+      "criterion": "50 \u00b1 5 Hz",
+      "required": true
+    },
+    {
+      "group": "Arc (forward + turn)",
+      "name": "Moves forward while turning left",
+      "passed": true,
+      "measured": "forward +15.7 cm, yaw +37.5\u00b0",
+      "criterion": "forward \u2265 5 cm and yaw \u2265 +5\u00b0",
+      "required": true
+    },
+    {
+      "group": "Arc (forward + turn)",
+      "name": "Body stable while walking",
+      "passed": true,
+      "measured": "max tilt 0.1\u00b0, height 132\u2013144 mm",
+      "criterion": "tilt \u2264 5\u00b0, height 143 \u00b1 20 mm",
+      "required": true
+    },
+    {
+      "group": "Arc (forward + turn)",
+      "name": "Tripod gait (feet in the air)",
+      "passed": true,
+      "measured": "100% samples OK, max 3 lifted",
+      "criterion": "only one tripod lifted, 100%",
+      "required": true
+    },
+    {
+      "group": "Arc (forward + turn)",
+      "name": "Leg command stream rate",
+      "passed": true,
+      "measured": "50.0 Hz",
+      "criterion": "50 \u00b1 5 Hz",
+      "required": true
+    },
+    {
+      "group": "Stopping",
+      "name": "Returns to stand pose (8 stops)",
+      "passed": false,
+      "measured": "slowest 1.30 s",
+      "criterion": "joints within 1\u00b0 in \u2264 1 s",
+      "required": true
+    },
+    {
+      "group": "Stopping",
+      "name": "Comes to rest",
+      "passed": true,
+      "measured": "worst drift 2.8 mm, 0.21\u00b0 (last 2 s)",
+      "criterion": "\u2264 5 mm, \u2264 0.5\u00b0",
+      "required": true
+    },
+    {
+      "group": "Stopping",
+      "name": "All feet down after stopping",
+      "passed": true,
+      "measured": "8/8 stops",
+      "criterion": "all",
+      "required": true
+    },
+    {
+      "group": "/cmd_vel handling",
+      "name": "Tiny command ignored (deadband)",
+      "passed": true,
+      "measured": "0 stepping msgs, drift 0.0 mm",
+      "criterion": "no steps, \u2264 5 mm",
+      "required": true
+    },
+    {
+      "group": "/cmd_vel handling",
+      "name": "Oversized command handled safely",
+      "passed": true,
+      "measured": "0 gait warnings, tilt 0.2\u00b0, moved 26.1 cm / +6\u00b0",
+      "criterion": "no warnings, tilt \u2264 8\u00b0, tripod OK, still moves",
+      "required": true
+    },
+    {
+      "group": "Overall",
+      "name": "No gait warnings or errors",
+      "passed": true,
+      "measured": "0 WARN/ERROR from hexapod_gait",
+      "criterion": "0",
+      "required": true
+    },
+    {
+      "group": "Stand (final)",
+      "name": "Body height",
+      "passed": true,
+      "measured": "143.0 mm",
+      "criterion": "143 \u00b1 10 mm",
+      "required": true
+    },
+    {
+      "group": "Stand (final)",
+      "name": "Body level (ground truth)",
+      "passed": true,
+      "measured": "max tilt 0.00\u00b0",
+      "criterion": "\u2264 2\u00b0",
+      "required": true
+    },
+    {
+      "group": "Stand (final)",
+      "name": "Body level (IMU)",
+      "passed": true,
+      "measured": "max tilt 0.00\u00b0",
+      "criterion": "\u2264 2\u00b0",
+      "required": true
+    },
+    {
+      "group": "Stand (final)",
+      "name": "Joints at stand pose",
+      "passed": true,
+      "measured": "max error 0.02\u00b0",
+      "criterion": "\u2264 1\u00b0",
+      "required": true
+    },
+    {
+      "group": "Stand (final)",
+      "name": "All six feet on the ground",
+      "passed": true,
+      "measured": "highest foot 13.0 mm",
+      "criterion": "all < 19 mm",
+      "required": true
+    },
+    {
+      "group": "Stand (final)",
+      "name": "/foot_contacts all down",
+      "passed": true,
+      "measured": "250/250 msgs all 1",
+      "criterion": "all msgs all 1",
+      "required": true
+    },
+    {
+      "group": "Stand (final)",
+      "name": "Holds still",
+      "passed": true,
+      "measured": "drift 0.0 mm, -0.00\u00b0",
+      "criterion": "\u2264 5 mm, \u2264 0.5\u00b0",
+      "required": true
+    },
+    {
+      "group": "Overall",
+      "name": "Same stand after all manoeuvres",
+      "passed": true,
+      "measured": "height changed 0.0 mm",
+      "criterion": "\u2264 3 mm",
+      "required": true
+    },
+    {
+      "group": "Info",
+      "name": "Publisher stops without sending zero",
+      "passed": false,
+      "measured": "robot KEEPS WALKING on the last command",
+      "criterion": "stops (a /cmd_vel timeout)",
+      "required": false
+    }
+  ],
+  "phases": [
+    {
+      "name": "settle",
+      "cmd": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "publish": true,
+      "t0": 1789634330.7700355,
+      "t1": 1789634332.7701573,
+      "metrics": {
+        "duration": 1.9974167346954346,
+        "forward": 0.0,
+        "left": 0.0,
+        "distance": 0.0,
+        "yaw_deg": 0.0,
+        "tilt_max_deg": 0.00040066068763161246,
+        "z_min": 0.142997465198321,
+        "z_max": 0.142997465198321,
+        "z_mean": 0.142997465198321,
+        "max_lifted": 0,
+        "tripod_ok": 1.0,
+        "all_down": 1.0,
+        "foot_z_max_mm": 13.00207355515176
+      },
+      "traj_hz": 55.996588914759705
+    },
+    {
+      "name": "stand (initial)",
+      "cmd": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "publish": true,
+      "t0": 1789634332.7711313,
+      "t1": 1789634340.774953,
+      "metrics": {
+        "duration": 7.985979318618774,
+        "forward": 0.0,
+        "left": 0.0,
+        "distance": 0.0,
+        "yaw_deg": 0.0,
+        "tilt_max_deg": 0.00040066068763161246,
+        "z_min": 0.142997465198321,
+        "z_max": 0.142997465198321,
+        "z_mean": 0.142997465198321,
+        "max_lifted": 0,
+        "tripod_ok": 1.0,
+        "all_down": 1.0,
+        "foot_z_max_mm": 13.00207355515176
+      },
+      "traj_hz": 49.97612633320704
+    },
+    {
+      "name": "forward",
+      "cmd": [
+        0.1,
+        0.0,
+        0.0
+      ],
+      "publish": true,
+      "t0": 1789634340.7776322,
+      "t1": 1789634350.781867,
+      "metrics": {
+        "duration": 10.003802061080933,
+        "forward": 0.277026553711726,
+        "left": 0.00783167498309455,
+        "distance": 0.2771372342259998,
+        "yaw_deg": -0.50502992775776,
+        "tilt_max_deg": 0.09577215452901054,
+        "z_min": 0.13198547625978488,
+        "z_max": 0.14370921600515726,
+        "z_mean": 0.1360483681844854,
+        "max_lifted": 3,
+        "tripod_ok": 1.0,
+        "all_down": 0.3099315068493151,
+        "foot_z_max_mm": 30.444653748869538
+      },
+      "traj_hz": 49.978835008920946
+    },
+    {
+      "name": "stop after forward",
+      "cmd": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "publish": true,
+      "t0": 1789634350.7850988,
+      "t1": 1789634353.7852771,
+      "metrics": {
+        "duration": 3.002580404281616,
+        "forward": -0.010595814544513648,
+        "left": 0.010867419125875681,
+        "distance": 0.015178013187475348,
+        "yaw_deg": -1.731432797487454,
+        "tilt_max_deg": 0.054617042280022704,
+        "z_min": 0.13772486151021263,
+        "z_max": 0.1429923332511306,
+        "z_mean": 0.14236404504052352,
+        "max_lifted": 3,
+        "tripod_ok": 1.0,
+        "all_down": 0.88,
+        "foot_z_max_mm": 25.10083812468496
+      },
+      "traj_hz": 50.33034141100443
+    },
+    {
+      "name": "backward",
+      "cmd": [
+        -0.1,
+        0.0,
+        0.0
+      ],
+      "publish": true,
+      "t0": 1789634353.786617,
+      "t1": 1789634363.7892985,
+      "metrics": {
+        "duration": 9.99095368385315,
+        "forward": -0.2735637102639029,
+        "left": 0.012392246121368751,
+        "distance": 0.27384424649293837,
+        "yaw_deg": -1.0646068656635257,
+        "tilt_max_deg": 0.08927680179118383,
+        "z_min": 0.13197288814165242,
+        "z_max": 0.14381261899818276,
+        "z_mean": 0.1360677869805128,
+        "max_lifted": 3,
+        "tripod_ok": 1.0,
+        "all_down": 0.2967409948542024,
+        "foot_z_max_mm": 30.07570837596038
+      },
+      "traj_hz": 49.98659612544482
+    },
+    {
+      "name": "stop after backward",
+      "cmd": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "publish": true,
+      "t0": 1789634363.7934105,
+      "t1": 1789634366.794488,
+      "metrics": {
+        "duration": 2.983755111694336,
+        "forward": -0.0072416897530365575,
+        "left": 0.012218298195863184,
+        "distance": 0.014203129277812976,
+        "yaw_deg": -1.5793932282174545,
+        "tilt_max_deg": 0.037862353515415746,
+        "z_min": 0.13781991241033384,
+        "z_max": 0.14299191107501838,
+        "z_mean": 0.14235101057073157,
+        "max_lifted": 3,
+        "tripod_ok": 1.0,
+        "all_down": 0.8914285714285715,
+        "foot_z_max_mm": 25.000190517924832
+      },
+      "traj_hz": 49.98204955403529
+    },
+    {
+      "name": "turn left",
+      "cmd": [
+        0.0,
+        0.0,
+        0.4
+      ],
+      "publish": true,
+      "t0": 1789634366.796106,
+      "t1": 1789634376.7971654,
+      "metrics": {
+        "duration": 9.988034963607788,
+        "forward": -0.0007496532144491672,
+        "left": 0.010738585347749156,
+        "distance": 0.010764719931927019,
+        "yaw_deg": 60.733088777265564,
+        "tilt_max_deg": 0.02706075264615312,
+        "z_min": 0.13150877208948894,
+        "z_max": 0.1436762637747137,
+        "z_mean": 0.13588718407977468,
+        "max_lifted": 3,
+        "tripod_ok": 1.0,
+        "all_down": 0.3127147766323024,
+        "foot_z_max_mm": 29.99799536834856
+      },
+      "traj_hz": 49.99470409225746
+    },
+    {
+      "name": "stop after turn left",
+      "cmd": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "publish": true,
+      "t0": 1789634376.8002868,
+      "t1": 1789634379.8034737,
+      "metrics": {
+        "duration": 3.0044565200805664,
+        "forward": -0.01723393848669629,
+        "left": 0.00803616008597477,
+        "distance": 0.019015480658943273,
+        "yaw_deg": 1.3007562242639652,
+        "tilt_max_deg": 0.010670607936656288,
+        "z_min": 0.13736920821351528,
+        "z_max": 0.14298988730816123,
+        "z_mean": 0.14229542781876994,
+        "max_lifted": 3,
+        "tripod_ok": 1.0,
+        "all_down": 0.8977272727272727,
+        "foot_z_max_mm": 24.331371118635577
+      },
+      "traj_hz": 49.94694067986268
+    },
+    {
+      "name": "turn right",
+      "cmd": [
+        0.0,
+        0.0,
+        -0.4
+      ],
+      "publish": true,
+      "t0": 1789634379.8062494,
+      "t1": 1789634389.809136,
+      "metrics": {
+        "duration": 9.994028329849243,
+        "forward": -0.007591469401908549,
+        "left": 0.00484983156336553,
+        "distance": 0.00900840018389116,
+        "yaw_deg": -59.17605747888682,
+        "tilt_max_deg": 0.026319994212282562,
+        "z_min": 0.13152436459546926,
+        "z_max": 0.1437148625350102,
+        "z_mean": 0.13570789702108413,
+        "max_lifted": 3,
+        "tripod_ok": 1.0,
+        "all_down": 0.3281786941580756,
+        "foot_z_max_mm": 30.745007534665124
+      },
+      "traj_hz": 50.0855426391427
+    },
+    {
+      "name": "stop after turn right",
+      "cmd": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "publish": true,
+      "t0": 1789634389.813839,
+      "t1": 1789634392.8160887,
+      "metrics": {
+        "duration": 3.000105381011963,
+        "forward": -0.008872970831352847,
+        "left": 0.013194720717933085,
+        "distance": 0.015900637289061437,
+        "yaw_deg": -1.2468701121908339,
+        "tilt_max_deg": 0.00925692434774943,
+        "z_min": 0.13717475933311654,
+        "z_max": 0.14298600545832593,
+        "z_mean": 0.14224825295985213,
+        "max_lifted": 3,
+        "tripod_ok": 1.0,
+        "all_down": 0.8914285714285715,
+        "foot_z_max_mm": 24.52062303415338
+      },
+      "traj_hz": 49.96253280166653
+    },
+    {
+      "name": "strafe left",
+      "cmd": [
+        0.0,
+        0.1,
+        0.0
+      ],
+      "publish": true,
+      "t0": 1789634392.8185716,
+      "t1": 1789634400.820403,
+      "metrics": {
+        "duration": 7.996330738067627,
+        "forward": 0.0026873908731169568,
+        "left": 0.23529482021885723,
+        "distance": 0.23531016657069717,
+        "yaw_deg": -0.6383566457313801,
+        "tilt_max_deg": 0.12172910198461441,
+        "z_min": 0.13237484482633333,
+        "z_max": 0.1439897602996392,
+        "z_mean": 0.1365664771081586,
+        "max_lifted": 3,
+        "tripod_ok": 1.0,
+        "all_down": 0.296137339055794,
+        "foot_z_max_mm": 30.28508435627865
+      },
+      "traj_hz": 49.98855554808019
+    },
+    {
+      "name": "stop after strafe left",
+      "cmd": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "publish": true,
+      "t0": 1789634400.8233051,
+      "t1": 1789634403.824946,
+      "metrics": {
+        "duration": 3.007742404937744,
+        "forward": -0.009550819316523266,
+        "left": 0.01298995860098716,
+        "distance": 0.016123187466262193,
+        "yaw_deg": -1.3468346740232235,
+        "tilt_max_deg": 0.07522061027849569,
+        "z_min": 0.1384586943307456,
+        "z_max": 0.14299401221977873,
+        "z_mean": 0.14247088202025202,
+        "max_lifted": 3,
+        "tripod_ok": 1.0,
+        "all_down": 0.88,
+        "foot_z_max_mm": 25.054840924430625
+      },
+      "traj_hz": 49.97266833754389
+    },
+    {
+      "name": "strafe right",
+      "cmd": [
+        0.0,
+        -0.1,
+        0.0
+      ],
+      "publish": true,
+      "t0": 1789634403.8274481,
+      "t1": 1789634411.829958,
+      "metrics": {
+        "duration": 8.004847526550293,
+        "forward": -8.518980106306945e-05,
+        "left": -0.19960704114279718,
+        "distance": 0.1996070593217698,
+        "yaw_deg": 0.5375762448367433,
+        "tilt_max_deg": 0.1082144411807743,
+        "z_min": 0.13211905340467153,
+        "z_max": 0.14419011833295226,
+        "z_mean": 0.13639354701340384,
+        "max_lifted": 3,
+        "tripod_ok": 1.0,
+        "all_down": 0.3053763440860215,
+        "foot_z_max_mm": 29.36479779619257
+      },
+      "traj_hz": 50.109279263531946
+    },
+    {
+      "name": "stop after strafe right",
+      "cmd": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "publish": true,
+      "t0": 1789634411.8331964,
+      "t1": 1789634414.8375778,
+      "metrics": {
+        "duration": 2.993837833404541,
+        "forward": -0.009509179263918137,
+        "left": 0.012187613554312913,
+        "distance": 0.015458409181497382,
+        "yaw_deg": -1.304802502631885,
+        "tilt_max_deg": 0.02959079886685839,
+        "z_min": 0.13758328172251255,
+        "z_max": 0.14299184400607026,
+        "z_mean": 0.14234913133663116,
+        "max_lifted": 3,
+        "tripod_ok": 1.0,
+        "all_down": 0.8914285714285715,
+        "foot_z_max_mm": 24.228868195699484
+      },
+      "traj_hz": 49.92708285636493
+    },
+    {
+      "name": "arc forward-left",
+      "cmd": [
+        0.08,
+        0.0,
+        0.3
+      ],
+      "publish": true,
+      "t0": 1789634414.8402421,
+      "t1": 1789634422.8444185,
+      "metrics": {
+        "duration": 7.994224309921265,
+        "forward": 0.1573801229208565,
+        "left": 0.06423721370612986,
+        "distance": 0.16998506615379746,
+        "yaw_deg": 37.493546010345916,
+        "tilt_max_deg": 0.09780373303566775,
+        "z_min": 0.13181005519832428,
+        "z_max": 0.1436987351595094,
+        "z_mean": 0.13615841474572893,
+        "max_lifted": 3,
+        "tripod_ok": 1.0,
+        "all_down": 0.30042918454935624,
+        "foot_z_max_mm": 30.82410736327794
+      },
+      "traj_hz": 49.973911255494876
+    },
+    {
+      "name": "stop after arc forward-left",
+      "cmd": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "publish": true,
+      "t0": 1789634422.847958,
+      "t1": 1789634425.8505945,
+      "metrics": {
+        "duration": 3.003004789352417,
+        "forward": 0.013847043982164804,
+        "left": 0.007280761453829315,
+        "distance": 0.015644491503132126,
+        "yaw_deg": -1.6377364157651402,
+        "tilt_max_deg": 0.01847631867621314,
+        "z_min": 0.13739970424265138,
+        "z_max": 0.14298959897664684,
+        "z_mean": 0.1422256805450951,
+        "max_lifted": 3,
+        "tripod_ok": 1.0,
+        "all_down": 0.8977272727272727,
+        "foot_z_max_mm": 24.551075604977253
+      },
+      "traj_hz": 50.28913869097671
+    },
+    {
+      "name": "deadband (tiny cmd)",
+      "cmd": [
+        0.005,
+        0.0,
+        0.0
+      ],
+      "publish": true,
+      "t0": 1789634425.85316,
+      "t1": 1789634429.858309,
+      "metrics": {
+        "duration": 4.0086610317230225,
+        "forward": 8.829490503844308e-06,
+        "left": 6.7641810179923775e-06,
+        "distance": 1.1122681664133214e-05,
+        "yaw_deg": -0.001724990172437442,
+        "tilt_max_deg": 0.0005364167277137204,
+        "z_min": 0.14298959897664684,
+        "z_max": 0.14299377820285084,
+        "z_mean": 0.14299330667978927,
+        "max_lifted": 0,
+        "tripod_ok": 1.0,
+        "all_down": 1.0,
+        "foot_z_max_mm": 13.013768530108354
+      },
+      "traj_hz": 49.935718672503825
+    },
+    {
+      "name": "oversized cmd",
+      "cmd": [
+        1.0,
+        0.0,
+        1.0
+      ],
+      "publish": true,
+      "t0": 1789634429.8610144,
+      "t1": 1789634434.8646064,
+      "metrics": {
+        "duration": 5.016812086105347,
+        "forward": 0.2609967953724614,
+        "left": 0.014246200034289322,
+        "distance": 0.2613853121545116,
+        "yaw_deg": 5.534110128210466,
+        "tilt_max_deg": 0.22375671454696153,
+        "z_min": 0.13243566624127076,
+        "z_max": 0.14401370563051,
+        "z_mean": 0.1367776666690527,
+        "max_lifted": 3,
+        "tripod_ok": 1.0,
+        "all_down": 0.2764505119453925,
+        "foot_z_max_mm": 30.270016492120604
+      },
+      "traj_hz": 49.964105643481034
+    },
+    {
+      "name": "stop after oversized cmd",
+      "cmd": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "publish": true,
+      "t0": 1789634434.8681517,
+      "t1": 1789634437.8713238,
+      "metrics": {
+        "duration": 2.993858814239502,
+        "forward": 0.006082588023921708,
+        "left": 0.0015783176791332302,
+        "distance": 0.006284024487939261,
+        "yaw_deg": -1.1267054088492348,
+        "tilt_max_deg": 0.09043251042643898,
+        "z_min": 0.13730337987542895,
+        "z_max": 0.1429904770061831,
+        "z_mean": 0.14220906526404875,
+        "max_lifted": 3,
+        "tripod_ok": 1.0,
+        "all_down": 0.92,
+        "foot_z_max_mm": 23.585626374167653
+      },
+      "traj_hz": 50.28016776783061
+    },
+    {
+      "name": "cmd then publisher stops",
+      "cmd": [
+        0.1,
+        0.0,
+        0.0
+      ],
+      "publish": true,
+      "t0": 1789634437.874822,
+      "t1": 1789634439.8748813,
+      "metrics": {
+        "duration": 1.9957246780395508,
+        "forward": 0.05460658312023743,
+        "left": 0.004192439308199455,
+        "distance": 0.05476728464530933,
+        "yaw_deg": 1.2674812900384123,
+        "tilt_max_deg": 0.06425936870788049,
+        "z_min": 0.1323478752505587,
+        "z_max": 0.14377130810880212,
+        "z_mean": 0.13817816220626988,
+        "max_lifted": 3,
+        "tripod_ok": 1.0,
+        "all_down": 0.2905982905982906,
+        "foot_z_max_mm": 29.624408861158567
+      },
+      "traj_hz": 49.998515888398146
+    },
+    {
+      "name": "publisher silent",
+      "cmd": [
+        0.1,
+        0.0,
+        0.0
+      ],
+      "publish": false,
+      "t0": 1789634439.8775368,
+      "t1": 1789634442.8810427,
+      "metrics": {
+        "duration": 2.996979236602783,
+        "forward": 0.08077808000582454,
+        "left": -0.0002456246007266974,
+        "distance": 0.08077845344441717,
+        "yaw_deg": 0.23440997709979614,
+        "tilt_max_deg": 0.03852188321864987,
+        "z_min": 0.13208821365916665,
+        "z_max": 0.13773185654033426,
+        "z_mean": 0.1353100493688634,
+        "max_lifted": 3,
+        "tripod_ok": 1.0,
+        "all_down": 0.32571428571428573,
+        "foot_z_max_mm": 25.25909188811909
+      },
+      "traj_hz": 49.941635787149266
+    },
+    {
+      "name": "explicit stop",
+      "cmd": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "publish": true,
+      "t0": 1789634442.885196,
+      "t1": 1789634445.8856049,
+      "metrics": {
+        "duration": 2.9912123680114746,
+        "forward": 0.01175484772220153,
+        "left": 0.007324835166294204,
+        "distance": 0.013850258307538051,
+        "yaw_deg": -1.4308791495291882,
+        "tilt_max_deg": 0.03761121171278204,
+        "z_min": 0.13677597683345677,
+        "z_max": 0.14298820483545105,
+        "z_mean": 0.14215757743731774,
+        "max_lifted": 3,
+        "tripod_ok": 1.0,
+        "all_down": 0.9371428571428572,
+        "foot_z_max_mm": 22.571709794690392
+      },
+      "traj_hz": 50.32647403852335
+    },
+    {
+      "name": "stand (final)",
+      "cmd": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "publish": true,
+      "t0": 1789634445.8889558,
+      "t1": 1789634450.8908474,
+      "metrics": {
+        "duration": 5.011811971664429,
+        "forward": 1.1127147019338271e-05,
+        "left": 8.712155328312731e-06,
+        "distance": 1.4132057573284098e-05,
+        "yaw_deg": -0.001516128785750044,
+        "tilt_max_deg": 0.0005758394348952754,
+        "z_min": 0.14298820483545105,
+        "z_max": 0.14299371247785111,
+        "z_mean": 0.14299294551879982,
+        "max_lifted": 0,
+        "tripod_ok": 1.0,
+        "all_down": 1.0,
+        "foot_z_max_mm": 13.01129567167708
+      },
+      "traj_hz": 49.981091023627215
+    }
+  ],
+  "stops": {
+    "forward": {
+      "settle": 1.2616612911224365,
+      "rest_mm": 2.4054696480820503,
+      "rest_yaw": 0.2025953248815039,
+      "feet_down": true
+    },
+    "backward": {
+      "settle": 1.2591490745544434,
+      "rest_mm": 1.7432259624654123,
+      "rest_yaw": 0.16401319337318598,
+      "feet_down": true
+    },
+    "turn left": {
+      "settle": 1.1956377029418945,
+      "rest_mm": 2.1906450876261494,
+      "rest_yaw": 0.06981517314832388,
+      "feet_down": true
+    },
+    "turn right": {
+      "settle": 1.2037577629089355,
+      "rest_mm": 1.9722462701494132,
+      "rest_yaw": 0.06610403966864395,
+      "feet_down": true
+    },
+    "strafe left": {
+      "settle": 1.2059450149536133,
+      "rest_mm": 1.6640187562645554,
+      "rest_yaw": 0.1234413865393447,
+      "feet_down": true
+    },
+    "strafe right": {
+      "settle": 1.2705998420715332,
+      "rest_mm": 2.754538345318493,
+      "rest_yaw": 0.134788868446815,
+      "feet_down": true
+    },
+    "arc forward-left": {
+      "settle": 1.245969295501709,
+      "rest_mm": 1.6406129123279594,
+      "rest_yaw": 0.2115499421178513,
+      "feet_down": true
+    },
+    "oversized cmd": {
+      "settle": 1.2989842891693115,
+      "rest_mm": 0.5137033384439527,
+      "rest_yaw": 0.15849043735507076,
+      "feet_down": true
+    }
+  },
+  "gait_logs": [],
+  "bag": null
+}

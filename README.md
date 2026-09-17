@@ -344,7 +344,10 @@ hexapod_ros_robot_ws/
 │       ├── launch/                  # head.launch.py
 │       └── test/                    # unit tests (colcon test)
 ├── demo/                            # walk data, plot, GIF recorder
-├── docs/media/                      # images/GIF for this README
+├── docs/
+│   ├── ROADMAP.md                   # staged plan + current status and results
+│   └── media/                       # images/GIF for this README
+├── verification/                    # one acceptance test per roadmap stage
 ├── run_gazebo.sh                    # start Gazebo (GUI or headless)
 ├── run_rviz.sh                      # start RViz
 └── make_gif.sh                      # turn a video or image frames into a README GIF
@@ -387,19 +390,27 @@ or clamped.
 
 ## 11. Roadmap
 
-- [x] Robot model + RViz visualization
-- [x] `ros2_control` + Gazebo — robot stands
-- [x] Per-leg inverse kinematics
-- [x] Tripod gait — walks forward, strafes, and turns
-- [x] Intuitive `/cmd_vel` (forward = `linear.x`)
-- [x] IMU + odometry + software foot-contact state
-- [ ] Faster, drift-free walking (reduce foot slip)
-- [x] Face camera on the pan/tilt head
-- [x] Mirror-symmetric standing pose; face looks straight ahead by default
-- [x] Walking demo GIF recorded straight from Gazebo
-- [x] Simple head (pan/tilt) command interface (`/head/cmd`)
-- [ ] Keyboard/joystick teleop presets
-- [ ] Real-hardware servo interface
+Development follows a staged **simulation roadmap**, worked **one stage at a time**. Each
+stage is verified and approved before the next one starts. The full plan, the current
+status and the test results are in **[docs/ROADMAP.md](docs/ROADMAP.md)**.
+
+1. Stable basic gait ← **current stage** (verification: `python3 verification/stage1_basic_gait.py`)
+2. SLAM
+3. Localization
+4. Nav2
+5. Navigation tuning
+6. Head controller
+7. Simulated camera perception
+8. Face detection and tracking
+9. Object detection
+10. Search / look-around behavior
+11. Person following
+12. Behavior system
+13. Dance behavior
+14. Interaction (`/dance`, `/wave`, …)
+15. Behavior manager
+16. Full simulation integration
+17. Hardware preparation (only after the simulation is validated)
 
 ---
 

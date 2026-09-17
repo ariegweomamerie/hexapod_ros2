@@ -19,3 +19,6 @@ ign_recording*
 
 # Framing stills from demo/record_walk_gif.py --preview
 *_preview.png
+
+# Verification run recordings (large; kept locally)
+verification/runs/*/bag/
