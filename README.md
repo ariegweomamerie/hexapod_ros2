@@ -63,8 +63,9 @@ real robot (Raspberry Pi + servos).
 ## 2. Demo
 
 <p align="center">
-  <img src="docs/media/hexapod_walking.gif" alt="Hexapod walking in Gazebo" width="640"><br>
-  <em><b>Figure 2.</b> The hexapod walking forward with the tripod gait.</em>
+  <img src="docs/media/hexapod_stand_look.png" alt="Hexapod angled view" width="420">
+  <img src="docs/media/hexapod_stand_front.png" alt="Hexapod front view" width="420"><br>
+  <em><b>Figure 2.</b> The hexapod in Gazebo Sim — angled and front views.</em>
 </p>
 
 <p align="center">
@@ -72,6 +73,9 @@ real robot (Raspberry Pi + servos).
   <em><b>Figure 3.</b> Forward distance vs. time, measured live from Gazebo —
   a steady walking cruise.</em>
 </p>
+
+> 🎥 Want an animated walking clip here? Record the Gazebo window while driving,
+> then run `./make_gif.sh <recording> docs/media/hexapod_walking.gif` and add it above.
 
 ---
 
@@ -117,6 +121,7 @@ sudo apt install -y \
   ros-jazzy-ros2-control \
   ros-jazzy-ros2-controllers \
   ros-jazzy-joint-state-publisher-gui \
+  ros-jazzy-teleop-twist-keyboard \
   ros-jazzy-xacro \
   ros-jazzy-urdfdom-py \
   python3-pykdl \
