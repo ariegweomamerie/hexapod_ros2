@@ -1,0 +1,7 @@
+# Parameters for hexapod_head/head_node.
+# Joint limits are NOT set here: the node reads them from /robot_description,
+# so the URDF stays the single source of truth.
+hexapod_head:
+  ros__parameters:
+    max_velocity: 1.0   # rad/s - peak turning speed of either head joint
+    min_duration: 0.2   # s     - shortest move (keeps tiny moves smooth)
