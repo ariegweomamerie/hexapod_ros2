@@ -63,19 +63,25 @@ real robot (Raspberry Pi + servos).
 ## 2. Demo
 
 <p align="center">
+  <img src="docs/media/hexapod_walking.gif" alt="Hexapod walking, turning and looking around in Gazebo" width="640"><br>
+  <em><b>Figure 2.</b> Walking forward with the tripod gait, turning left, then
+  looking left, right and up with the pan/tilt head (real-time, Gazebo Sim).</em>
+</p>
+
+<p align="center">
   <img src="docs/media/hexapod_stand_look.png" alt="Hexapod angled view" width="420">
   <img src="docs/media/hexapod_stand_front.png" alt="Hexapod front view" width="420"><br>
-  <em><b>Figure 2.</b> The hexapod in Gazebo Sim — angled and front views.</em>
+  <em><b>Figure 3.</b> The hexapod in Gazebo Sim — angled and front views.</em>
 </p>
 
 <p align="center">
   <img src="demo/forward_walk.png" alt="Forward-walk performance plot" width="640"><br>
-  <em><b>Figure 3.</b> Forward distance vs. time, measured live from Gazebo —
+  <em><b>Figure 4.</b> Forward distance vs. time, measured live from Gazebo —
   a steady walking cruise.</em>
 </p>
 
-> 🎥 Want an animated walking clip here? Record the Gazebo window while driving,
-> then run `./make_gif.sh <recording> docs/media/hexapod_walking.gif` and add it above.
+> 🎥 Re-record the walking GIF any time (with Gazebo, the gait and the head
+> running): `python3 demo/record_walk_gif.py`
 
 ---
 
@@ -144,6 +150,7 @@ sudo apt install -y \
   ros-jazzy-xacro \
   ros-jazzy-urdfdom-py \
   python3-pykdl \
+  python3-pil \
   python3-colcon-common-extensions
 ```
 
@@ -155,6 +162,7 @@ What each piece does (so it's not a mystery):
 | `gz-ros2-control` + `ros2-control(lers)` | Runs the motor controllers in the sim |
 | `xacro` / `urdfdom-py` | Read and process the robot's 3D model files |
 | `python3-pykdl` | Math for the legs (inverse kinematics) |
+| `python3-pil` | Saves frames for the demo GIF recorder |
 | `colcon-common-extensions` | The tool that builds the project |
 
 ---
@@ -170,7 +178,7 @@ mkdir -p ~/hexapod_ros_robot_ws/src
 cd ~/hexapod_ros_robot_ws/src
 git clone https://github.com/ariegweomamerie/hexapod_ros2.git .
 
-# 2. Build the project (compiles/installs the two packages)
+# 2. Build the project (compiles/installs all the packages)
 cd ~/hexapod_ros_robot_ws
 colcon build
 
@@ -208,7 +216,16 @@ ros2 launch hexapod_gait gait.launch.py
 ```
 You'll see `Kinematics ready. Gait running.` — the robot is now ready to walk.
 
-**(Optional) Terminal 3 — RViz**, a second viewer useful for debugging:
+**Terminal 3 — start the head controller** (lets you point the face/camera):
+```bash
+cd ~/hexapod_ros_robot_ws
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+ros2 launch hexapod_head head.launch.py
+```
+You'll see `Head ready.` followed by the head's angle limits.
+
+**(Optional) Terminal 4 — RViz**, a second viewer useful for debugging:
 ```bash
 cd ~/hexapod_ros_robot_ws
 ./run_rviz.sh
@@ -253,19 +270,21 @@ ros2 topic hz /face_camera/image # camera stream rate (~30 Hz)
 ros2 run rqt_image_view rqt_image_view /face_camera/image
 ```
 
-**Move the head (pan/tilt):** the face joints are driven by `face_controller`.
-Angles are in radians, and **0, 0 = looking straight ahead**. Pan ranges
-−0.38…0.32 (left is positive); tilt ranges −0.42…0.62 (up is positive, down is
-negative):
+**Move the head (pan/tilt):** send `[pan, tilt]` in radians to `/head/cmd`
+(needs the head controller from Terminal 3). **`[0, 0]` looks straight ahead.**
+Pan ranges −0.38…0.32 (left is positive); tilt ranges −0.42…0.62 (up is
+positive, down is negative):
 ```bash
 # look left and slightly down
-ros2 topic pub --once /face_controller/joint_trajectory trajectory_msgs/msg/JointTrajectory \
-  "{joint_names: [face_pan, face_tilt], points: [{positions: [0.25, -0.2], time_from_start: {sec: 1}}]}"
+ros2 topic pub --once /head/cmd std_msgs/msg/Float64MultiArray "{data: [0.25, -0.2]}"
 
 # back to straight ahead
-ros2 topic pub --once /face_controller/joint_trajectory trajectory_msgs/msg/JointTrajectory \
-  "{joint_names: [face_pan, face_tilt], points: [{positions: [0.0, 0.0], time_from_start: {sec: 1}}]}"
+ros2 topic pub --once /head/cmd std_msgs/msg/Float64MultiArray "{data: [0.0, 0.0]}"
 ```
+The head turns smoothly at a limited speed (at most 1 rad/s, set in
+`src/hexapod_head/config/head.yaml`). Angles outside the limits are clamped to the
+nearest limit, with a warning. A new command smoothly takes over from a move that
+hasn't finished yet.
 
 ---
 
@@ -273,10 +292,13 @@ ros2 topic pub --once /face_controller/joint_trajectory trajectory_msgs/msg/Join
 
 ```text
  you ──/cmd_vel──►  gait node  ──/leg_controller/joint_trajectory──►  controllers ──► Gazebo
- (Twist)            │  - tripod phase clock                                            (physics)
-                    │  - foot trajectory (D-shaped step)
-                    │  - inverse kinematics (foot target -> joint angles)
-                    └──/foot_contacts──►  (which feet are down)
+ (Twist)            │  - tripod phase clock                                 ▲          (physics)
+                    │  - foot trajectory (D-shaped step)                    │
+                    │  - inverse kinematics (foot target -> joint angles)   │
+                    └──/foot_contacts──►  (which feet are down)             │
+                                                                            │
+ you ──/head/cmd──► head node  ──/face_controller/joint_trajectory──────────┘
+ ([pan, tilt])        - clamps to the URDF limits, speed-limited smooth moves
 ```
 
 1. **Description** (`Hexapod_Robot_description`) — the robot's 3D model (URDF/xacro):
@@ -293,6 +315,9 @@ ros2 topic pub --once /face_controller/joint_trajectory trajectory_msgs/msg/Join
    150 mm from each hip for a wide, stable base. **Walk** pulls them in to 120 mm so
    every leg has room for full strides. Starting or stopping only moves the feet in
    or out — no height change, no twisting.
+5. **Head** (`hexapod_head`) — turns a simple "look here" command (`/head/cmd`)
+   into a smooth, speed-limited move of the pan/tilt face. It reads the head's
+   limits from the robot model, so they always match the URDF.
 
 ---
 
@@ -306,16 +331,23 @@ hexapod_ros_robot_ws/
 │   │   ├── meshes/                  # 3D shapes for each part
 │   │   ├── config/                  # controllers, RViz, ROS–Gazebo bridge
 │   │   └── launch/                  # display.launch.py, gazebo.launch.py
-│   └── hexapod_gait/                # the walking brain (Python)
-│       ├── hexapod_gait/
-│       │   ├── kinematics.py        # per-leg forward/inverse kinematics
-│       │   └── gait_node.py         # tripod gait -> joint commands + /foot_contacts
-│       └── launch/                  # gait.launch.py
-├── demo/                            # recorded walk data + performance plot
+│   ├── hexapod_gait/                # the walking brain (Python)
+│   │   ├── hexapod_gait/
+│   │   │   ├── kinematics.py        # per-leg forward/inverse kinematics
+│   │   │   └── gait_node.py         # tripod gait -> joint commands + /foot_contacts
+│   │   └── launch/                  # gait.launch.py
+│   └── hexapod_head/                # pan/tilt head command interface (Python)
+│       ├── hexapod_head/
+│       │   ├── motion.py            # clamping + speed-limited move planning (no ROS)
+│       │   └── head_node.py         # /head/cmd -> face_controller trajectories
+│       ├── config/head.yaml         # max head speed, shortest move
+│       ├── launch/                  # head.launch.py
+│       └── test/                    # unit tests (colcon test)
+├── demo/                            # walk data, plot, GIF recorder
 ├── docs/media/                      # images/GIF for this README
 ├── run_gazebo.sh                    # start Gazebo (GUI or headless)
 ├── run_rviz.sh                      # start RViz
-└── make_gif.sh                      # turn a screen recording into a README GIF
+└── make_gif.sh                      # turn a video or image frames into a README GIF
 ```
 
 ---
@@ -346,6 +378,11 @@ ros2 daemon stop && ros2 daemon start
 **The robot stands but won't walk.** Make sure the gait node (Terminal 2) is
 running and prints `Gait running`, and that you're publishing to `/cmd_vel`.
 
+**The head doesn't move.** Make sure the head controller (Terminal 3) is running
+and prints `Head ready.`, and that you send exactly two numbers, e.g.
+`"{data: [0.2, 0.0]}"`. Its terminal prints a warning when a command is rejected
+or clamped.
+
 ---
 
 ## 11. Roadmap
@@ -359,7 +396,8 @@ running and prints `Gait running`, and that you're publishing to `/cmd_vel`.
 - [ ] Faster, drift-free walking (reduce foot slip)
 - [x] Face camera on the pan/tilt head
 - [x] Mirror-symmetric standing pose; face looks straight ahead by default
-- [ ] Simple head (pan/tilt) command interface
+- [x] Walking demo GIF recorded straight from Gazebo
+- [x] Simple head (pan/tilt) command interface (`/head/cmd`)
 - [ ] Keyboard/joystick teleop presets
 - [ ] Real-hardware servo interface
 

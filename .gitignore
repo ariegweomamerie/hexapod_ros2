@@ -16,3 +16,6 @@ __pycache__/
 # Gazebo / recordings (large media - keep out of the repo)
 *.mp4
 ign_recording*
+
+# Framing stills from demo/record_walk_gif.py --preview
+*_preview.png
