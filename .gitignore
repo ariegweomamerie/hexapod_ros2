@@ -12,3 +12,7 @@ __pycache__/
 .vscode/
 *.swp
 .DS_Store
+
+# Gazebo / recordings (large media - keep out of the repo)
+*.mp4
+ign_recording*

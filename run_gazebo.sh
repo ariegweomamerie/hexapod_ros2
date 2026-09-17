@@ -12,6 +12,12 @@ export XDG_DATA_DIRS=/usr/local/share:/usr/share:/var/lib/snapd/desktop
 unset XDG_DATA_HOME
 export XDG_CONFIG_DIRS=/etc/xdg
 
+# NOTE: if the gz GUI crashes with "Failed to create OpenGL context" (display
+# only offers OpenGL < 3.3), either uncomment the software-GL fallback below, or
+# run headless with:  ./run_gazebo.sh headless:=true   (visualize in RViz).
+# export LIBGL_ALWAYS_SOFTWARE=1
+# export GALLIUM_DRIVER=llvmpipe
+
 source /opt/ros/jazzy/setup.bash
 source /home/general/hexapod_ros_robot_ws/install/setup.bash
 

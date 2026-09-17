@@ -18,14 +18,23 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSReliabilityPolicy
 from geometry_msgs.msg import Twist
-from std_msgs.msg import String
+from std_msgs.msg import String, Int8MultiArray, MultiArrayDimension
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from builtin_interfaces.msg import Duration
 
 from hexapod_gait.kinematics import HexapodKinematics, LEGS, JOINTS_PER_LEG
 
-# Neutral foot home positions in base_footprint frame (IK-derived clean stance).
-HOME = {
+# The legs are short relative to the body, so a stance that looks good standing
+# (nearly straight legs) has no room to stroke, and a stance that can walk must be
+# folded. We therefore use TWO poses:
+#   * STAND — tall, un-bent, wide footprint. Used when idle (looks natural).
+#   * WALK  — folded, feet tucked in, so the legs have room to stride.
+# The robot crouches from STAND to WALK when it starts moving, and rises back when
+# it stops. Foot positions are in the base_footprint frame.
+
+# WALK pose (feet at ~0.12 m reach, 0.13 m ride height) — gait offsets are added
+# to these; the folded legs give clearance for the stride.
+WALK_HOME = {
     "leg_l1": (0.3359, -0.0557, -0.1300),
     "leg_l2": (0.3491,  0.1365, -0.1300),
     "leg_l3": (0.3318,  0.2957, -0.1300),
@@ -33,20 +42,27 @@ HOME = {
     "leg_r2": (-0.1203,  0.1025, -0.1300),
     "leg_r3": (-0.1130,  0.2476, -0.1300),
 }
+# STAND pose (feet at ~0.15 m reach, 0.10 m ride height) — nearly straight legs
+# (femur ~10 deg) for a clean idle posture.
+STAND_HOME = {
+    "leg_l1": (0.3641, -0.0659, -0.1000),
+    "leg_l2": (0.3786,  0.1418, -0.1000),
+    "leg_l3": (0.3590,  0.3084, -0.1000),
+    "leg_r1": (-0.1145, -0.1029, -0.1000),
+    "leg_r2": (-0.1502,  0.0993, -0.1000),
+    "leg_r3": (-0.1430,  0.2482, -0.1000),
+}
+STAND_Q = {
+    "leg_l1": (0.0043, -0.2271, 0.0203),
+    "leg_l2": (0.0039, -0.2272, 0.0207),
+    "leg_l3": (-0.0009, -0.0889, 0.0200),
+    "leg_r1": (0.0038, 0.1926, -0.1598),
+    "leg_r2": (0.0039, 0.1927, -0.1598),
+    "leg_r3": (0.0021, 0.1927, -0.1612),
+}
+
 # Alternating tripod grouping (B is a half-cycle out of phase with A).
 TRIPOD_B = {"leg_r1", "leg_r3", "leg_l2"}
-
-# IK-derived neutral stance joint angles (coxa, femur, tibia) - used as the IK
-# seed and safe fallback. A good seed is essential: the LMA solver fails from a
-# far (0,0,0) start, so we always warm-start from here / the previous solution.
-STANCE_Q = {
-    "leg_l1": (0.0158, -0.6425, 0.1355),
-    "leg_l2": (0.0147, -0.6425, 0.1358),
-    "leg_l3": (0.0100, -0.5042, 0.1352),
-    "leg_r1": (-0.0104, 0.6049, -0.2740),
-    "leg_r2": (-0.0108, 0.6049, -0.2739),
-    "leg_r3": (-0.0038, 0.6042, -0.2750),
-}
 
 JOINT_ORDER = [f"{leg}_{j}" for leg in LEGS for j in JOINTS_PER_LEG]
 
@@ -68,18 +84,22 @@ class GaitNode(Node):
         self.rate = self.get_parameter("update_rate").value
         self.deadband = self.get_parameter("deadband").value
 
-        # body-center (mean of foot homes) for turning
-        hs = np.array([HOME[l][:2] for l in LEGS])
+        # body-center (mean of walk foot homes) for turning
+        hs = np.array([WALK_HOME[l][:2] for l in LEGS])
         self.center = hs.mean(axis=0)
 
         self.cmd = np.zeros(3)          # vx, vy, wz
         self.phase = 0.0
         self.kin = None
-        # warm-start every leg's IK from the stance (never from 0,0,0)
-        self.q_prev = {l: np.array(STANCE_Q[l], dtype=float) for l in LEGS}
+        # warm-start every leg's IK from the idle stand pose (never from 0,0,0)
+        self.q_prev = {l: np.array(STAND_Q[l], dtype=float) for l in LEGS}
 
         # ---- IO ----
         self.pub = self.create_publisher(JointTrajectory, "/leg_controller/joint_trajectory", 10)
+        # per-leg foot contact state (1 = foot on ground / stance, 0 = swing),
+        # derived from the gait phase. Order = LEGS. Matches the real robot,
+        # which has no physical foot sensors.
+        self.contact_pub = self.create_publisher(Int8MultiArray, "/foot_contacts", 10)
         self.create_subscription(Twist, "/cmd_vel", self.on_cmd, 10)
         # robot_description is latched (transient_local)
         qos = QoSProfile(depth=1)
@@ -87,14 +107,18 @@ class GaitNode(Node):
         qos.reliability = QoSReliabilityPolicy.RELIABLE
         self.create_subscription(String, "/robot_description", self.on_urdf, qos)
 
+        # Create the timer HERE (in __init__), not inside on_urdf. A timer created
+        # inside a subscription callback under rclpy.spin() is not reliably picked
+        # up by the executor, so tick() never fired. tick() early-returns until the
+        # kinematics are built from /robot_description.
+        self.dt = 1.0 / self.rate
+        self.timer = self.create_timer(self.dt, self.tick)
         self.get_logger().info("Waiting for /robot_description to build kinematics...")
 
     # ---- callbacks ----
     def on_urdf(self, msg):
         if self.kin is None:
             self.kin = HexapodKinematics(msg.data)
-            self.dt = 1.0 / self.rate
-            self.timer = self.create_timer(self.dt, self.tick)
             self.get_logger().info("Kinematics ready. Gait running. Publish /cmd_vel to walk.")
 
     def on_cmd(self, msg):
@@ -112,7 +136,7 @@ class GaitNode(Node):
         """Per-leg stride vector (m) for the current command: translation +
         rotational tangential component, clamped to max_step."""
         vx, vy, wz = self.cmd
-        rx, ry = np.array(HOME[leg][:2]) - self.center
+        rx, ry = np.array(WALK_HOME[leg][:2]) - self.center
         d = np.array([vx - wz * ry, vy + wz * rx]) * (self.cycle_time / 2.0)
         n = np.linalg.norm(d)
         if n > self.max_step:
@@ -122,7 +146,7 @@ class GaitNode(Node):
     def foot_target(self, leg):
         p = (self.phase + (0.5 if leg in TRIPOD_B else 0.0)) % 1.0
         d = self.step_vector(leg)
-        hx, hy, hz = HOME[leg]
+        hx, hy, hz = WALK_HOME[leg]
         if p < 0.5:                     # stance: +0.5d -> -0.5d on the ground
             frac = p / 0.5
             off = d * (0.5 - frac)
@@ -133,14 +157,36 @@ class GaitNode(Node):
             oz = self.step_height * math.sin(math.pi * frac)
         return np.array([hx + off[0], hy + off[1], hz + oz])
 
+    def in_stance(self, leg, moving):
+        """True if the foot is on the ground (stance), False if swinging.
+        Idle -> all feet down; moving -> first half of each leg's cycle."""
+        if not moving:
+            return True
+        pp = (self.phase + (0.5 if leg in TRIPOD_B else 0.0)) % 1.0
+        return pp < 0.5
+
+    def publish_contacts(self, moving):
+        msg = Int8MultiArray()
+        dim = MultiArrayDimension()
+        dim.label = ",".join(LEGS)      # documents the order for consumers
+        dim.size = len(LEGS)
+        dim.stride = len(LEGS)
+        msg.layout.dim = [dim]
+        msg.data = [1 if self.in_stance(leg, moving) else 0 for leg in LEGS]
+        self.contact_pub.publish(msg)
+
     def tick(self):
+        if self.kin is None:
+            return                      # kinematics not built yet (no URDF)
         moving = np.linalg.norm(self.cmd) > self.deadband
         if moving:
             self.phase = (self.phase + self.dt / self.cycle_time) % 1.0
 
+        self.publish_contacts(moving)
+
         positions = []
         for leg in LEGS:
-            target = self.foot_target(leg) if moving else np.array(HOME[leg])
+            target = self.foot_target(leg) if moving else np.array(STAND_HOME[leg])
             try:
                 q, rc = self.kin.solve(leg, target, seed=self.q_prev[leg])
                 if rc >= 0:

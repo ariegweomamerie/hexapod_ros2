@@ -1,9 +1,10 @@
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, RegisterEventHandler
+from launch.actions import IncludeLaunchDescription, RegisterEventHandler, DeclareLaunchArgument
 from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 import xacro
 from os.path import join
@@ -13,6 +14,15 @@ def generate_launch_description():
 
     pkg_ros_gz_sim = get_package_share_directory('ros_gz_sim')
     pkg_ros_gz_rbot = get_package_share_directory('Hexapod_Robot_description')
+
+    # headless:=true runs Gazebo server-only (no GUI). Use it when the display
+    # can't provide OpenGL >=3.3 for the gz GUI (it crash-loops otherwise);
+    # visualize with RViz instead. Default keeps the normal GUI.
+    headless = LaunchConfiguration('headless')
+    declare_headless = DeclareLaunchArgument('headless', default_value='false')
+    gz_args = PythonExpression(
+        ["'-s -r -v 4 empty.sdf' if '", headless, "' == 'true' else '-r -v 4 empty.sdf'"]
+    )
 
     robot_description_file = os.path.join(pkg_ros_gz_rbot, 'urdf', 'Hexapod_Robot.xacro')
     ros_gz_bridge_config = os.path.join(pkg_ros_gz_rbot, 'config', 'ros_gz_bridge_gazebo.yaml')
@@ -29,10 +39,10 @@ def generate_launch_description():
         parameters=[robot_description, {'use_sim_time': True}],
     )
 
-    # Start Gazebo with an empty world (running, verbose).
+    # Start Gazebo with an empty world (running, verbose); GUI unless headless.
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(join(pkg_ros_gz_sim, "launch", "gz_sim.launch.py")),
-        launch_arguments={"gz_args": "-r -v 4 empty.sdf"}.items()
+        launch_arguments={"gz_args": gz_args}.items()
     )
 
     # Spawn the robot from the /robot_description topic.
@@ -93,6 +103,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        declare_headless,
         gazebo,
         robot_state_publisher,
         ros_gz_bridge,

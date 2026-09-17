@@ -3,3 +3,57 @@
   ros_type_name: "rosgraph_msgs/msg/Clock"
   gz_type_name: "gz.msgs.Clock"
   direction: GZ_TO_ROS
+
+# odom -> base_footprint transform (from the OdometryPublisher) onto ROS /tf,
+# so RViz with fixed frame "odom" shows the robot travel across the world.
+- ros_topic_name: "/tf"
+  gz_topic_name: "/model/Hexapod_Robot/odom_tf"
+  ros_type_name: "tf2_msgs/msg/TFMessage"
+  gz_type_name: "gz.msgs.Pose_V"
+  direction: GZ_TO_ROS
+
+# odometry (nav_msgs) for reference / future use.
+- ros_topic_name: "/odom"
+  gz_topic_name: "/model/Hexapod_Robot/odometry"
+  ros_type_name: "nav_msgs/msg/Odometry"
+  gz_type_name: "gz.msgs.Odometry"
+  direction: GZ_TO_ROS
+
+# IMU (simulated BNO055) -> ROS sensor_msgs/Imu on /imu.
+- ros_topic_name: "/imu"
+  gz_topic_name: "/imu"
+  ros_type_name: "sensor_msgs/msg/Imu"
+  gz_type_name: "gz.msgs.IMU"
+  direction: GZ_TO_ROS
+
+# Per-foot contact sensors -> ROS ros_gz_interfaces/Contacts on /contact/leg_*.
+- ros_topic_name: "/contact/leg_l1"
+  gz_topic_name: "/contact/leg_l1"
+  ros_type_name: "ros_gz_interfaces/msg/Contacts"
+  gz_type_name: "gz.msgs.Contacts"
+  direction: GZ_TO_ROS
+- ros_topic_name: "/contact/leg_l2"
+  gz_topic_name: "/contact/leg_l2"
+  ros_type_name: "ros_gz_interfaces/msg/Contacts"
+  gz_type_name: "gz.msgs.Contacts"
+  direction: GZ_TO_ROS
+- ros_topic_name: "/contact/leg_l3"
+  gz_topic_name: "/contact/leg_l3"
+  ros_type_name: "ros_gz_interfaces/msg/Contacts"
+  gz_type_name: "gz.msgs.Contacts"
+  direction: GZ_TO_ROS
+- ros_topic_name: "/contact/leg_r1"
+  gz_topic_name: "/contact/leg_r1"
+  ros_type_name: "ros_gz_interfaces/msg/Contacts"
+  gz_type_name: "gz.msgs.Contacts"
+  direction: GZ_TO_ROS
+- ros_topic_name: "/contact/leg_r2"
+  gz_topic_name: "/contact/leg_r2"
+  ros_type_name: "ros_gz_interfaces/msg/Contacts"
+  gz_type_name: "gz.msgs.Contacts"
+  direction: GZ_TO_ROS
+- ros_topic_name: "/contact/leg_r3"
+  gz_topic_name: "/contact/leg_r3"
+  ros_type_name: "ros_gz_interfaces/msg/Contacts"
+  gz_type_name: "gz.msgs.Contacts"
+  direction: GZ_TO_ROS
