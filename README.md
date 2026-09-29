@@ -93,12 +93,13 @@ The robot has **20 motors** (called *joints*):
   - **coxa** — swings the whole leg left/right (like a hip),
   - **femur** — lifts the leg up/down (the thigh),
   - **tibia** — bends the lower leg (the knee).
-- a **2-joint "face"** (pan + tilt) at the front, carrying a forward-facing **camera**.
+- a **2-joint "face"** (pan + tilt) at the front, carrying a forward-facing **RGB-D camera**.
 
-**Sensors:** an **IMU** in the body (orientation, rotation rate, acceleration) and a
-**camera** on the pan/tilt head (640×480 @ 30 Hz, 60° field of view). Because the
-camera is on the head, panning/tilting the face points the camera. There is no
-lidar — vision comes from the camera.
+**Sensors:** an **IMU** in the body (orientation, rotation rate, acceleration) and an
+**RGB-D camera** on the pan/tilt head (colour + depth, 640×480 @ 15 Hz, 87° field of
+view, 0.1–12 m). Because the camera is on the head, panning/tilting the face points the
+camera. There is no lidar — the robot sees with the camera, and depth comes from the
+same optics as the colour image.
 
 So: 6 legs × 3 joints = 18, plus 2 for the face = **20 joints**.
 
@@ -271,7 +272,9 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard
 ```bash
 ros2 topic echo /foot_contacts   # which feet are on the ground (1=down, 0=lifted)
 ros2 topic echo /imu             # body orientation, rotation rate, acceleration
-ros2 topic hz /face_camera/image # camera stream rate (~30 Hz)
+ros2 topic hz /face_camera/image # colour stream rate (~15 Hz)
+ros2 topic hz /face_camera/depth_image  # depth stream (32-bit float metres)
+ros2 topic echo --once /face_camera/camera_info   # intrinsics
 ```
 
 **See through the camera** (or use the Face Camera panel in RViz):

@@ -4,16 +4,11 @@
   gz_type_name: "gz.msgs.Clock"
   direction: GZ_TO_ROS
 
-# odom -> base_footprint transform (from the OdometryPublisher) onto ROS /tf,
-# so RViz with fixed frame "odom" shows the robot travel across the world.
-- ros_topic_name: "/tf"
-  gz_topic_name: "/model/Hexapod_Robot/odom_tf"
-  ros_type_name: "tf2_msgs/msg/TFMessage"
-  gz_type_name: "gz.msgs.Pose_V"
-  direction: GZ_TO_ROS
-
-# odometry (nav_msgs) for reference / future use.
-- ros_topic_name: "/odom"
+# Ground-truth odometry, EVALUATION ONLY - never the robot's odometry source.
+# Its TF (odom -> base_footprint) is deliberately NOT bridged: that transform
+# belongs to visual odometry once RGB-D SLAM is running, and feeding perfect
+# simulator poses into TF would mask the drift we need to measure.
+- ros_topic_name: "/odom_ground_truth"
   gz_topic_name: "/model/Hexapod_Robot/odometry"
   ros_type_name: "nav_msgs/msg/Odometry"
   gz_type_name: "gz.msgs.Odometry"
@@ -26,7 +21,8 @@
   gz_type_name: "gz.msgs.IMU"
   direction: GZ_TO_ROS
 
-# Face camera -> ROS sensor_msgs/Image + CameraInfo (streaming video frames).
+# RGB-D camera. One Gazebo rgbd_camera sensor feeds all four topics; colour and
+# depth are rendered together, so their stamps match frame for frame.
 - ros_topic_name: "/face_camera/image"
   gz_topic_name: "/face_camera/image"
   ros_type_name: "sensor_msgs/msg/Image"
@@ -36,6 +32,20 @@
   gz_topic_name: "/face_camera/camera_info"
   ros_type_name: "sensor_msgs/msg/CameraInfo"
   gz_type_name: "gz.msgs.CameraInfo"
+  direction: GZ_TO_ROS
+
+# Depth image: 32-bit float metres, same optics and stamp as the colour frame.
+- ros_topic_name: "/face_camera/depth_image"
+  gz_topic_name: "/face_camera/depth_image"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  direction: GZ_TO_ROS
+
+# Organised point cloud straight from the sensor - no extra processing node.
+- ros_topic_name: "/face_camera/points"
+  gz_topic_name: "/face_camera/points"
+  ros_type_name: "sensor_msgs/msg/PointCloud2"
+  gz_type_name: "gz.msgs.PointCloudPacked"
   direction: GZ_TO_ROS
 
 # Per-foot contact sensors -> ROS ros_gz_interfaces/Contacts on /contact/leg_*.

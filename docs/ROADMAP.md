@@ -25,7 +25,7 @@ Verification scripts live in [`verification/`](../verification/README.md), one p
 | Stage | Name | Status |
 |------:|------|--------|
 | 1 | Stable basic gait | ✅ **Passed** 2026-09-29 — 75/75 checks, twice (see Stage 1) |
-| 2 | SLAM | 🔶 **In progress** — sensing decided (RGB-D + RTAB-Map); test facility built and validated |
+| 2 | SLAM | 🔶 **In progress** — 2.1 RGB-D camera ✅, 2.2 camera TF ✅; next: visual odometry |
 | 3 | Localization | ⬜ Not started |
 | 4 | Nav2 | ⬜ Not started |
 | 5 | Navigation tuning | ⬜ Not started |
@@ -220,10 +220,64 @@ the feet chatter between coincident surfaces (the robot stepped but barely moved
 1.5 cm in 25 s), and the world was first built with ~350 one-box links, which halved
 the real-time factor before the geometry was merged into a few links.
 
-**Next in this stage:** swap the RGB camera for an RGB-D sensor (15 Hz, ~87° FOV,
-optical frames), bridge depth and points, bring up `rgbd_odometry` and measure it
-against ground truth, then add `rtabmap`, map a loop, confirm loop closure, and check
-the map against the world's true geometry. `ros2 bag` records each run.
+### Stage 2.1 / 2.2 — RGB-D camera and camera TF (done 2026-09-29)
+
+The head now carries a native Gazebo `rgbd_camera`: colour and depth are rendered
+from the same optics, so depth is real geometry rather than something inferred from
+the colour image.
+
+| Stream | Topic | Type | Detail |
+|--------|-------|------|--------|
+| Colour | `/face_camera/image` | `sensor_msgs/Image` | 640×480 `rgb8`, 15 Hz |
+| Depth | `/face_camera/depth_image` | `sensor_msgs/Image` | 640×480 `32FC1` (metres), 15 Hz, 0.29–8.9 m observed, 0.1–12 m clip |
+| Intrinsics | `/face_camera/camera_info` | `sensor_msgs/CameraInfo` | fx = fy = 337.36, cx 320, cy 240, 87.0° × 70.9° FOV |
+| Point cloud | `/face_camera/points` | `sensor_msgs/PointCloud2` | organised 640×480, `xyz` + `rgb`, 15 Hz, straight from the sensor |
+
+Colour and depth share a stamp exactly (107/107 frames, worst offset 0.000 ms), which
+is what RGB-D odometry needs.
+
+**Camera frames (REP 103/145).** The camera has a physical frame and an optical frame,
+both hanging off the head so pan and tilt carry them:
+
+```text
+base_footprint -> base_link -> face_bracet_base_link_1 -> face_link_1
+                -> face_camera_link -> face_camera_optical_frame
+```
+
+At neutral head the optical frame sits at (+0.124, −0.102, +0.060) m from
+`base_footprint`, with Z along the robot's forward axis, Y down and X right — the
+convention every ROS vision node assumes. Images are stamped
+`face_camera_optical_frame`, not the head link. Commanding the head ±17.2° moves the
+camera view by exactly ±17.2° in pan and tilt, and it returns to neutral.
+
+**Ground truth is off the TF tree.** Gazebo's odometry is published as
+`/odom_ground_truth` (50 Hz) and its `odom → base_footprint` TF is no longer bridged,
+so nothing feeds perfect poses into TF. That transform is left free for visual
+odometry to own from Stage 2.3. RViz's fixed frame moved to `base_footprint` until
+SLAM provides `map`/`odom`.
+
+**Performance** (RGB-D at 15 Hz replaces RGB at 30 Hz, so cost went down despite
+adding depth and a point cloud):
+
+| Configuration | Before (RGB 30 Hz) | After (RGB-D 15 Hz) |
+|---|---|---|
+| Facility, GUI | 0.49–0.50 | **0.62** |
+| Facility, headless | 0.62 | **0.65** |
+| Empty world, Stage 1 run | 0.92–0.94 | **0.96** |
+| CPU (headless facility) | — | 177% of 1600% (16 cores) |
+| GPU (Quadro T1000) | — | 33% |
+
+All four topics publish at 15.2 Hz in simulation time. The facility world alone still
+runs at 0.99; the remaining gap is rendering.
+
+**Regression:** Stage 1 verification 75/75 in the empty world, unchanged criteria;
+unit tests 31/31 (gait 12, head 11, worlds 8); the robot walks 9.5 cm/s in the
+facility with the sensor mounted.
+
+**Next in this stage:** bring up `rgbd_odometry` alone
+ and measure it against ground truth while
+walking, then add `rtabmap`, map a loop, confirm loop closure, and check the map
+against the world's true geometry. `ros2 bag` records each run.
 
 ## Stage 3 — Localization
 

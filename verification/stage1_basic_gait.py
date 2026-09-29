@@ -77,7 +77,7 @@ CMD_TIMEOUT = 0.5                   # s, expected /cmd_vel watchdog timeout
 
 BAG_TOPICS = [
     "/robot_description", "/cmd_vel", "/joint_states", "/foot_contacts", "/imu",
-    "/odom", "/tf", "/tf_static", "/clock", "/leg_controller/joint_trajectory",
+    "/odom_ground_truth", "/tf", "/tf_static", "/clock", "/leg_controller/joint_trajectory",
     "/leg_controller/controller_state", "/rosout",
 ]
 

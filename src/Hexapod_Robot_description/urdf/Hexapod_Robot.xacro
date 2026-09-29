@@ -633,6 +633,31 @@
 </joint>
 
 <!-- ==========================================================================
+     Camera frames on the head (REP 103 / REP 145).
+
+       face_link_1 -> face_camera_link -> face_camera_optical_frame
+
+     face_camera_link is the camera's physical frame, placed on the face front
+     surface 12 mm ahead of the screen centre, with x forward, y left, z up.
+     face_camera_optical_frame is the frame the images are stamped with: x right,
+     y down, z forward, i.e. the optical convention every ROS vision node expects.
+     Both hang off face_link_1, so pan and tilt carry the camera with them.
+     ========================================================================== -->
+<link name="face_camera_link"/>
+<joint name="face_camera_joint" type="fixed">
+  <origin xyz="0.032470 -0.042942 0.035805" rpy="-0.000309 -0.362146 -1.599897"/>
+  <parent link="face_link_1"/>
+  <child link="face_camera_link"/>
+</joint>
+
+<link name="face_camera_optical_frame"/>
+<joint name="face_camera_optical_joint" type="fixed">
+  <origin xyz="0 0 0" rpy="-1.570796 0 -1.570796"/>
+  <parent link="face_camera_link"/>
+  <child link="face_camera_optical_frame"/>
+</joint>
+
+<!-- ==========================================================================
      Foot-tip frames (one per leg), computed from the femur mesh geometry as
      the vertex furthest from each femur joint (~0.179 m leg segment). These are
      the IK target frames and foot-contact references for the gait.
