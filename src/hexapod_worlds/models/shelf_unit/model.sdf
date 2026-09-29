@@ -1,0 +1,95 @@
+<?xml version="1.0"?>
+<sdf version="1.10">
+  <model name="shelf_unit">
+    <static>true</static>
+      <link name="body">
+        <collision name="postA_col"><pose>-0.47 0 0.95 0 0 0</pose>
+          <geometry><box><size>0.06 0.45 1.90</size></box></geometry></collision>
+        <visual name="postA_vis"><pose>-0.47 0 0.95 0 0 0</pose>
+          <geometry><box><size>0.06 0.45 1.90</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/metal_panel.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+        <collision name="postB_col"><pose>0.47 0 0.95 0 0 0</pose>
+          <geometry><box><size>0.06 0.45 1.90</size></box></geometry></collision>
+        <visual name="postB_vis"><pose>0.47 0 0.95 0 0 0</pose>
+          <geometry><box><size>0.06 0.45 1.90</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/metal_panel.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+        <collision name="deck0_col"><pose>0 0 0.35 0 0 0</pose>
+          <geometry><box><size>1.00 0.45 0.05</size></box></geometry></collision>
+        <visual name="deck0_vis"><pose>0 0 0.35 0 0 0</pose>
+          <geometry><box><size>1.00 0.45 0.05</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/metal_panel.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+        <collision name="deck1_col"><pose>0 0 0.90 0 0 0</pose>
+          <geometry><box><size>1.00 0.45 0.05</size></box></geometry></collision>
+        <visual name="deck1_vis"><pose>0 0 0.90 0 0 0</pose>
+          <geometry><box><size>1.00 0.45 0.05</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/metal_panel.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+        <collision name="deck2_col"><pose>0 0 1.45 0 0 0</pose>
+          <geometry><box><size>1.00 0.45 0.05</size></box></geometry></collision>
+        <visual name="deck2_vis"><pose>0 0 1.45 0 0 0</pose>
+          <geometry><box><size>1.00 0.45 0.05</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/metal_panel.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+        <visual name="bins0_vis"><pose>0 0 0.50 0 0 0</pose>
+          <geometry><box><size>0.92 0.38 0.26</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/shelf_bins.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+        <visual name="bins1_vis"><pose>0 0 1.05 0 0 0</pose>
+          <geometry><box><size>0.92 0.38 0.26</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/shelf_bins.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+      </link>
+  </model>
+</sdf>

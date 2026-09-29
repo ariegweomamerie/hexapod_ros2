@@ -203,7 +203,8 @@ scripts that also fix a common GUI issue on some systems (see Troubleshooting).
 **Terminal 1 — start Gazebo (physics + the robot):**
 ```bash
 cd ~/hexapod_ros_robot_ws
-./run_gazebo.sh
+./run_gazebo.sh                 # empty world
+./run_facility.sh               # or: the indoor SLAM test facility
 ```
 The Gazebo window opens and the robot appears, standing.
 
@@ -356,19 +357,25 @@ hexapod_ros_robot_ws/
 │   │   │   ├── kinematics.py        # per-leg forward/inverse kinematics
 │   │   │   └── gait_node.py         # tripod gait -> joint commands + /foot_contacts
 │   │   └── launch/                  # gait.launch.py
-│   └── hexapod_head/                # pan/tilt head command interface (Python)
-│       ├── hexapod_head/
-│       │   ├── motion.py            # clamping + speed-limited move planning (no ROS)
-│       │   └── head_node.py         # /head/cmd -> face_controller trajectories
-│       ├── config/head.yaml         # max head speed, shortest move
-│       ├── launch/                  # head.launch.py
-│       └── test/                    # unit tests (colcon test)
+│   ├── hexapod_head/                # pan/tilt head command interface (Python)
+│   │   ├── hexapod_head/
+│   │   │   ├── motion.py            # clamping + speed-limited move planning (no ROS)
+│   │   │   └── head_node.py         # /head/cmd -> face_controller trajectories
+│   │   ├── config/head.yaml         # max head speed, shortest move
+│   │   ├── launch/                  # head.launch.py
+│   │   └── test/                    # unit tests (colcon test)
+│   └── hexapod_worlds/              # simulation worlds (Python generator)
+│       ├── hexapod_worlds/          # layout, textures, generator, validators
+│       ├── worlds/                  # hexapod_facility.sdf (generated)
+│       ├── models/                  # props + shared textures (generated)
+│       └── launch/                  # slam_world.launch.py
 ├── demo/                            # walk data, plot, GIF recorder
 ├── docs/
 │   ├── ROADMAP.md                   # staged plan + current status and results
 │   └── media/                       # images/GIF for this README
 ├── verification/                    # one acceptance test per roadmap stage
-├── run_gazebo.sh                    # start Gazebo (GUI or headless)
+├── run_gazebo.sh                    # start Gazebo, empty world (GUI or headless)
+├── run_facility.sh                  # start Gazebo in the SLAM test facility
 ├── run_rviz.sh                      # start RViz
 └── make_gif.sh                      # turn a video or image frames into a README GIF
 ```
@@ -420,7 +427,7 @@ stage is verified and approved before the next one starts. The full plan, the cu
 status and the test results are in **[docs/ROADMAP.md](docs/ROADMAP.md)**.
 
 1. Stable basic gait ✅ passed 2026-09-29, 75/75 checks twice (`python3 verification/stage1_basic_gait.py`)
-2. SLAM ← **current stage**
+2. SLAM ← **current stage** (RGB-D + RTAB-Map; test facility built: `./run_facility.sh`)
 3. Localization
 4. Nav2
 5. Navigation tuning

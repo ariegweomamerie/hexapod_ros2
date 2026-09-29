@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+<sdf version="1.10">
+  <model name="workbench">
+    <static>true</static>
+      <link name="body">
+        <collision name="top_col"><pose>0 0 0.80 0 0 0</pose>
+          <geometry><box><size>1.40 0.70 0.07</size></box></geometry></collision>
+        <visual name="top_vis"><pose>0 0 0.80 0 0 0</pose>
+          <geometry><box><size>1.40 0.70 0.07</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/bench_top.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+        <collision name="legA_col"><pose>-0.65 -0.30 0.39 0 0 0</pose>
+          <geometry><box><size>0.07 0.07 0.78</size></box></geometry></collision>
+        <visual name="legA_vis"><pose>-0.65 -0.30 0.39 0 0 0</pose>
+          <geometry><box><size>0.07 0.07 0.78</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/metal_panel.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+        <collision name="legB_col"><pose>0.65 -0.30 0.39 0 0 0</pose>
+          <geometry><box><size>0.07 0.07 0.78</size></box></geometry></collision>
+        <visual name="legB_vis"><pose>0.65 -0.30 0.39 0 0 0</pose>
+          <geometry><box><size>0.07 0.07 0.78</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/metal_panel.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+        <collision name="legC_col"><pose>-0.65 0.30 0.39 0 0 0</pose>
+          <geometry><box><size>0.07 0.07 0.78</size></box></geometry></collision>
+        <visual name="legC_vis"><pose>-0.65 0.30 0.39 0 0 0</pose>
+          <geometry><box><size>0.07 0.07 0.78</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/metal_panel.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+        <collision name="legD_col"><pose>0.65 0.30 0.39 0 0 0</pose>
+          <geometry><box><size>0.07 0.07 0.78</size></box></geometry></collision>
+        <visual name="legD_vis"><pose>0.65 0.30 0.39 0 0 0</pose>
+          <geometry><box><size>0.07 0.07 0.78</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/metal_panel.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+        <collision name="undershelf_col"><pose>0 0 0.28 0 0 0</pose>
+          <geometry><box><size>1.30 0.60 0.05</size></box></geometry></collision>
+        <visual name="undershelf_vis"><pose>0 0 0.28 0 0 0</pose>
+          <geometry><box><size>1.30 0.60 0.05</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/metal_panel.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+        <collision name="vice_col"><pose>0.52 0.0 0.93 0 0 0</pose>
+          <geometry><box><size>0.22 0.18 0.20</size></box></geometry></collision>
+        <visual name="vice_vis"><pose>0.52 0.0 0.93 0 0 0</pose>
+          <geometry><box><size>0.22 0.18 0.20</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/metal_brushed.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+      </link>
+  </model>
+</sdf>

@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<sdf version="1.10">
+  <model name="pallet">
+    <static>true</static>
+      <link name="body">
+        <collision name="deck_col"><pose>0 0 0.12 0 0 0</pose>
+          <geometry><box><size>1.20 0.80 0.06</size></box></geometry></collision>
+        <visual name="deck_vis"><pose>0 0 0.12 0 0 0</pose>
+          <geometry><box><size>1.20 0.80 0.06</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/pallet_wood.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+        <collision name="footA_col"><pose>0 -0.33 0.045 0 0 0</pose>
+          <geometry><box><size>1.20 0.10 0.09</size></box></geometry></collision>
+        <visual name="footA_vis"><pose>0 -0.33 0.045 0 0 0</pose>
+          <geometry><box><size>1.20 0.10 0.09</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/pallet_wood.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+        <collision name="footB_col"><pose>0 0.33 0.045 0 0 0</pose>
+          <geometry><box><size>1.20 0.10 0.09</size></box></geometry></collision>
+        <visual name="footB_vis"><pose>0 0.33 0.045 0 0 0</pose>
+          <geometry><box><size>1.20 0.10 0.09</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/pallet_wood.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+      </link>
+  </model>
+</sdf>

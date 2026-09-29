@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+<sdf version="1.10">
+  <model name="robot_cell">
+    <static>true</static>
+      <link name="body">
+        <collision name="mat_col"><pose>0 0 0.01 0 0 0</pose>
+          <geometry><box><size>1.60 1.60 0.02</size></box></geometry></collision>
+        <visual name="mat_vis"><pose>0 0 0.01 0 0 0</pose>
+          <geometry><box><size>1.60 1.60 0.02</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/rubber_mat.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+        <collision name="fenceN_col"><pose>0 0.8 0.60 0 0 0</pose>
+          <geometry><box><size>1.60 0.05 1.20</size></box></geometry></collision>
+        <visual name="fenceN_vis"><pose>0 0.8 0.60 0 0 0</pose>
+          <geometry><box><size>1.60 0.05 1.20</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/fence_mesh.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+        <collision name="fenceW_col"><pose>-0.8 0 0.60 0 0 0</pose>
+          <geometry><box><size>0.05 1.60 1.20</size></box></geometry></collision>
+        <visual name="fenceW_vis"><pose>-0.8 0 0.60 0 0 0</pose>
+          <geometry><box><size>0.05 1.60 1.20</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/fence_mesh.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+        <collision name="fenceE_col"><pose>0.8 0 0.60 0 0 0</pose>
+          <geometry><box><size>0.05 1.60 1.20</size></box></geometry></collision>
+        <visual name="fenceE_vis"><pose>0.8 0 0.60 0 0 0</pose>
+          <geometry><box><size>0.05 1.60 1.20</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/fence_mesh.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+        <collision name="postA_col"><pose>-0.8 0.8 0.65 0 0 0</pose>
+          <geometry><box><size>0.09 0.09 1.30</size></box></geometry></collision>
+        <visual name="postA_vis"><pose>-0.8 0.8 0.65 0 0 0</pose>
+          <geometry><box><size>0.09 0.09 1.30</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/metal_panel.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+        <collision name="postB_col"><pose>0.8 0.8 0.65 0 0 0</pose>
+          <geometry><box><size>0.09 0.09 1.30</size></box></geometry></collision>
+        <visual name="postB_vis"><pose>0.8 0.8 0.65 0 0 0</pose>
+          <geometry><box><size>0.09 0.09 1.30</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/metal_panel.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+        <collision name="rig_col"><pose>0 0.35 0.375 0 0 0</pose>
+          <geometry><box><size>0.55 0.55 0.75</size></box></geometry></collision>
+        <visual name="rig_vis"><pose>0 0.35 0.375 0 0 0</pose>
+          <geometry><box><size>0.55 0.55 0.75</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/machine_skin.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+      </link>
+  </model>
+</sdf>

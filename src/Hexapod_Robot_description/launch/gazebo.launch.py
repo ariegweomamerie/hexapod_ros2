@@ -20,8 +20,16 @@ def generate_launch_description():
     # visualize with RViz instead. Default keeps the normal GUI.
     headless = LaunchConfiguration('headless')
     declare_headless = DeclareLaunchArgument('headless', default_value='false')
+    # world:= an SDF world file (or a built-in name). Default: the empty world the
+    # gait was verified in; hexapod_worlds passes the facility world for SLAM.
+    world = LaunchConfiguration('world')
+    declare_world = DeclareLaunchArgument('world', default_value='empty.sdf')
+    # spawn pose, so a world can place the robot at its own start point
+    declare_pose = [DeclareLaunchArgument(n, default_value=v) for n, v in
+                    (('x', '0.0'), ('y', '0.0'), ('z', '0.32'), ('yaw', '0.0'))]
     gz_args = PythonExpression(
-        ["'-s -r -v 4 empty.sdf' if '", headless, "' == 'true' else '-r -v 4 empty.sdf'"]
+        ["'-s -r -v 4 ' + '", world, "' if '", headless, "' == 'true' else '-r -v 4 ' + '",
+         world, "'"]
     )
 
     robot_description_file = os.path.join(pkg_ros_gz_rbot, 'urdf', 'Hexapod_Robot.xacro')
@@ -53,7 +61,8 @@ def generate_launch_description():
             "-topic", "/robot_description",
             "-name", "Hexapod_Robot",
             "-allow_renaming", "false",
-            "-x", "0.0", "-y", "0.0", "-z", "0.32", "-Y", "0.0",
+            "-x", LaunchConfiguration('x'), "-y", LaunchConfiguration('y'),
+            "-z", LaunchConfiguration('z'), "-Y", LaunchConfiguration('yaw'),
         ],
         output='screen',
     )
@@ -104,6 +113,8 @@ def generate_launch_description():
 
     return LaunchDescription([
         declare_headless,
+        declare_world,
+        *declare_pose,
         gazebo,
         robot_state_publisher,
         ros_gz_bridge,

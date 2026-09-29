@@ -25,7 +25,7 @@ Verification scripts live in [`verification/`](../verification/README.md), one p
 | Stage | Name | Status |
 |------:|------|--------|
 | 1 | Stable basic gait | ✅ **Passed** 2026-09-29 — 75/75 checks, twice (see Stage 1) |
-| 2 | SLAM | ⬜ Not started |
+| 2 | SLAM | 🔶 **In progress** — sensing decided (RGB-D + RTAB-Map); test facility built and validated |
 | 3 | Localization | ⬜ Not started |
 | 4 | Nav2 | ⬜ Not started |
 | 5 | Navigation tuning | ⬜ Not started |
@@ -151,15 +151,79 @@ load. As a side effect, walking is about 3× faster with the gait itself unchang
 
 ## Stage 2 — SLAM
 
-**Goal:** build a map of a simulated environment while the hexapod walks.
+**Goal:** build a map of a simulated environment while the hexapod walks, with
+loop closure, and verify the map.
 
-- **Sensing is an open decision.** Choose a sensing setup that fits a camera-based
-  hexapod. The old LaserScan display came from a wheeled-robot template and must not be
-  restored blindly. Decide at the start of this stage and document the reasoning.
-- Build a simulated environment with enough structure to map.
-- Verify that the robot can move while mapping, and check the resulting map before
-  moving on.
-- Record the mapping runs with `ros2 bag`.
+### Sensing decision (2026-09-29)
+
+**RGB-D camera → RTAB-Map** (`rtabmap_odom` for visual odometry, `rtabmap_slam` for
+the graph, loop closure and map). No lidar and no depth-to-laserscan: the simulation
+mirrors the sensing the real robot will use.
+
+Why RTAB-Map over the alternatives on this stack (Ubuntu 24.04 / ROS 2 Jazzy):
+
+| Option | Jazzy packages | Loop closure | Map for Nav2 | Verdict |
+|--------|----------------|--------------|--------------|---------|
+| **RTAB-Map** 0.23.7 | apt binaries | yes, appearance-based | occupancy grid + `map → odom` | **chosen** |
+| ORB-SLAM3 | none (unmaintained wrappers) | yes | sparse points only | rejected |
+| Isaac ROS Visual SLAM | Humble/Jetson focus | yes | no grid | rejected |
+| OpenVINS / VINS-Fusion | partial ports | VINS only | no | rejected: odometry only |
+| slam_toolbox | apt binaries | yes | yes | excluded: needs a LaserScan |
+
+Ground-truth odometry is **not** used to help SLAM. Gazebo's `/odom` is kept for
+scoring only; visual odometry will own `odom → base_footprint`.
+
+### Test facility (built and validated 2026-09-29)
+
+`hexapod_worlds` holds a bespoke **industrial robotics facility**, 15 × 11 m, generated
+from primitives and procedural textures (`generate.py`) so it loads with no downloads
+and stays reproducible. Eight perimeter rooms — robotics lab, loading, testing, storage,
+workshop, maintenance, parts store, equipment room — around a ring corridor with an
+equipment core inside the loop.
+
+Designed for this robot and this sensor:
+
+- **Three nested loops** for loop-closure tests: ring 25.6 m, core 19.5 m, rooms 12.0 m.
+  At ~9 cm/s a short loop is walkable in minutes, so it gets tested often.
+- **START sits on the ring, inside a loop**, not at the end of a corridor.
+- **Alternative routes**: every room opens onto the ring, several open into each other,
+  giving T-junctions and four-way choices for Nav2 later.
+- **Detail placed low.** The camera is 0.14 m off the floor, so the world puts its
+  features there: floor lane markings, kick plates, door numbers, pallets, pipe runs.
+- **Zone identity**: each area has its own wall and floor materials; the two corridor
+  legs are deliberately similar, to test perceptual aliasing honestly.
+
+### Validation results
+
+| Check | Result |
+|---|---|
+| World loads, no missing resources | ✅ 3 controllers active, no asset errors |
+| Props vs walls / each other / START | ✅ 0 overlaps (`validate_slam_world`) |
+| Every zone reachable from START | ✅ 10/10 zones, 53.8 m² walkable |
+| Loops walkable with a lane | ✅ ring 1.20 m, core 0.90 m, rooms 0.90 m narrowest |
+| Doorways | ✅ widened to 1.1 m (1.0 m clear of frames) for a legged robot |
+| Visual features from robot height | ✅ 18/18 viewpoints, 343–1476 ORB features (min 150) |
+| Places distinguishable | ✅ no pair above 15% descriptor match |
+| Robot walks in the facility | ✅ 9.9 cm/s straight down the corridor |
+| Robot walks a full loop | ✅ ring loop 24.6 m in 4.8 min, back to START, body tilt ≤ 0.4° |
+| Robot passes through doorways | ✅ core loop: in the south door, out the north, tilt ≤ 2.7° |
+| Real-time factor, world alone | ✅ 0.99 (empty world: 1.00) — the world itself is nearly free |
+| Real-time factor, with robot + camera | ⚠️ 0.54–0.62; the robot's 30 Hz camera rendering the scene is the cost |
+
+Offline unit tests (`colcon test --packages-select hexapod_worlds`, 8 tests) hold the
+layout to its invariants: zones tile the floor, doorways sit inside their walls and stay
+at least 1.0 m wide, geometry stays inside the building, loops close, START is on the
+ring but outside the core, and every zone has a camera viewpoint.
+
+Two bugs the validation caught, both fixed: a ground plane under the floor slabs made
+the feet chatter between coincident surfaces (the robot stepped but barely moved,
+1.5 cm in 25 s), and the world was first built with ~350 one-box links, which halved
+the real-time factor before the geometry was merged into a few links.
+
+**Next in this stage:** swap the RGB camera for an RGB-D sensor (15 Hz, ~87° FOV,
+optical frames), bridge depth and points, bring up `rgbd_odometry` and measure it
+against ground truth, then add `rtabmap`, map a loop, confirm loop closure, and check
+the map against the world's true geometry. `ros2 bag` records each run.
 
 ## Stage 3 — Localization
 

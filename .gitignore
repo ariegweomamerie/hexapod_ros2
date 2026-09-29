@@ -22,3 +22,7 @@ ign_recording*
 
 # Verification run outputs (local artifacts; results are recorded in docs/ROADMAP.md)
 verification/runs/
+
+# Generated docs images from world inspection runs (regenerate with the tools)
+src/hexapod_worlds/docs/facility_views.png
+src/hexapod_worlds/docs/facility_clearance.png

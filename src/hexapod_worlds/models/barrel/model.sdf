@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<sdf version="1.10">
+  <model name="barrel">
+    <static>true</static>
+      <link name="body">
+        <collision name="drum_col"><pose>0 0 0.44 0 0 0</pose>
+          <geometry><cylinder><radius>0.24</radius><length>0.88</length></cylinder>
+          </geometry></collision>
+        <visual name="drum_vis"><pose>0 0 0.44 0 0 0</pose>
+          <geometry><cylinder><radius>0.24</radius><length>0.88</length></cylinder></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/barrel_skin.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+        <collision name="lid_col"><pose>0 0 0.90 0 0 0</pose>
+          <geometry><cylinder><radius>0.25</radius><length>0.04</length></cylinder>
+          </geometry></collision>
+        <visual name="lid_vis"><pose>0 0 0.90 0 0 0</pose>
+          <geometry><cylinder><radius>0.25</radius><length>0.04</length></cylinder></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/metal_brushed.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+      </link>
+  </model>
+</sdf>

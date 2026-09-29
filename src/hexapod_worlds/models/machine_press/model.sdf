@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<sdf version="1.10">
+  <model name="machine_press">
+    <static>true</static>
+      <link name="body">
+        <collision name="base_col"><pose>0 0 0.15 0 0 0</pose>
+          <geometry><box><size>1.00 1.00 0.30</size></box></geometry></collision>
+        <visual name="base_vis"><pose>0 0 0.15 0 0 0</pose>
+          <geometry><box><size>1.00 1.00 0.30</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/metal_panel.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+        <collision name="column_col"><pose>-0.18 0 1.20 0 0 0</pose>
+          <geometry><box><size>0.55 0.55 1.80</size></box></geometry></collision>
+        <visual name="column_vis"><pose>-0.18 0 1.20 0 0 0</pose>
+          <geometry><box><size>0.55 0.55 1.80</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/machine_skin_b.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+        <collision name="ram_col"><pose>0.22 0 1.55 0 0 0</pose>
+          <geometry><box><size>0.70 0.70 0.35</size></box></geometry></collision>
+        <visual name="ram_vis"><pose>0.22 0 1.55 0 0 0</pose>
+          <geometry><box><size>0.70 0.70 0.35</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/metal_brushed.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+        <collision name="table_col"><pose>0.22 0 0.65 0 0 0</pose>
+          <geometry><box><size>0.80 0.80 0.10</size></box></geometry></collision>
+        <visual name="table_vis"><pose>0.22 0 0.65 0 0 0</pose>
+          <geometry><box><size>0.80 0.80 0.10</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/metal_panel.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
+      </link>
+  </model>
+</sdf>
