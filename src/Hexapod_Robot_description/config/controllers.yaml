@@ -8,6 +8,19 @@
 # JointTrajectoryController is used (not a plain forward controller) because the
 # gait generator will send interpolated trajectories to these controllers later.
 
+# Simulated servo response. gz_ros2_control turns each position command into a joint
+# velocity: v = gain * error * update_rate. The default 0.1 gives a ~0.1 s time
+# constant, far slower than a hobby servo; the legs then lag ~0.1 s and drag their
+# planted feet when the gait stops. 0.3 gives ~33 ms and stays well inside the stable
+# range (gain < 1 converges without overshoot).
+# This needs soft joint limits: at 0.3, a gravity-loaded joint driven exactly onto its
+# URDF hard stop locks up in the physics engine (face_tilt did, 2/2). The gait IK and
+# the head node therefore keep every command 0.02 rad inside the URDF limits.
+gz_ros_control:
+  ros__parameters:
+    position_proportional_gain: 0.3
+
+
 controller_manager:
   ros__parameters:
     update_rate: 100  # Hz
@@ -48,6 +61,11 @@ leg_controller:
     state_interfaces:
       - position
       - velocity
+    # The gait streams a new short trajectory every 20 ms. Start each one from the
+    # last DESIRED state, not the measured one: interpolating from the (always
+    # slightly lagging) measured state re-anchors the reference every message,
+    # which delayed it ~160 ms and executed only ~1/3 of the planned leg motion.
+    interpolate_from_desired_state: true
 
 face_controller:
   ros__parameters:

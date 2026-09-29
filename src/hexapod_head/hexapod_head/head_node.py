@@ -25,7 +25,12 @@ from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64MultiArray, String
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
-from hexapod_head.motion import HEAD_JOINTS, plan_move, read_joint_limits
+from hexapod_head.motion import HEAD_JOINTS, JointLimits, plan_move, read_joint_limits
+
+# Commands are kept this far inside the URDF limits. Driving a loaded joint exactly
+# onto its hard stop can lock it up in the physics engine (face_tilt did), and on a
+# real servo it means stalling against the end stop.
+SOFT_LIMIT_MARGIN = 0.02        # rad (~1.15 deg)
 
 
 class HeadNode(Node):
@@ -62,11 +67,14 @@ class HeadNode(Node):
         if missing:
             self.get_logger().error(f"URDF has no limits for {missing}; head disabled")
             return
-        self.limits = tuple(limits[j] for j in HEAD_JOINTS)
+        self.limits = tuple(JointLimits(limits[j].lower + SOFT_LIMIT_MARGIN,
+                                        limits[j].upper - SOFT_LIMIT_MARGIN)
+                            for j in HEAD_JOINTS)
         pan, tilt = self.limits
         self.get_logger().info(
             f"Head ready. pan {pan.lower:+.3f}..{pan.upper:+.3f} rad (left +), "
-            f"tilt {tilt.lower:+.3f}..{tilt.upper:+.3f} rad (up +). "
+            f"tilt {tilt.lower:+.3f}..{tilt.upper:+.3f} rad (up +); "
+            f"kept {SOFT_LIMIT_MARGIN:.2f} rad inside the URDF limits. "
             "Publish [pan, tilt] to /head/cmd.")
 
     def on_joint_states(self, msg):

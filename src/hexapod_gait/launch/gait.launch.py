@@ -8,16 +8,12 @@ def generate_launch_description():
         executable='gait_node',
         name='hexapod_gait',
         output='screen',
-        # use_sim_time is intentionally False for THIS node (Gazebo,
-        # ros2_control, controllers and RViz stay on simulation time).
-        # Reasoning specific to this project's current architecture:
-        #   * the gait is a relative-duration JointTrajectory streamer, so its
-        #     control loop does not depend on Gazebo's absolute /clock;
-        #   * with use_sim_time:=true the 50 Hz timer runs on sim time and will
-        #     FREEZE if /clock does not reach this node (a DDS discovery issue we
-        #     hit), stalling the whole gait;
-        #   * wall-clock timing makes the gait timer independent of /clock and
-        #     immune to that failure.
-        parameters=[{'use_sim_time': False}],
+        # Simulation time: the 50 Hz control timer, gait phase, start/stop
+        # transitions and the /cmd_vel watchdog all follow Gazebo's /clock, the
+        # same clock as the physics, controllers and (later) Nav2. With wall-clock
+        # time the gait ran too fast for the physics whenever Gazebo fell behind
+        # real time (real-time factor < 1), which made its behaviour load-dependent.
+        # If /clock stops (Gazebo paused or gone), the gait simply pauses.
+        parameters=[{'use_sim_time': True}],
     )
     return LaunchDescription([gait])
