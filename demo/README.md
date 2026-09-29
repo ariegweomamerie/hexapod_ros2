@@ -25,7 +25,7 @@ ros2 bag play demo/forward_walk_bag
 ros2 bag record -o demo/my_walk \
   /clock /joint_states /cmd_vel /tf /tf_static /leg_controller/controller_state
 # then, in another terminal, drive the robot forward:
-ros2 topic pub /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.12}}'
+ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.12}}'   # Ctrl+C to stop
 ```
 
 ## Record the walking GIF

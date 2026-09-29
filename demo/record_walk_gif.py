@@ -54,8 +54,8 @@ BODY_CENTRE = (0.115, 0.115)      # body centre in the robot's base_footprint fr
 # Choreography: (duration s, label, cmd_vel (linear.x, angular.z) or None, head [pan, tilt] or None)
 SCRIPT = [
     (1.5, "stand",      (0.0, 0.0),  None),
-    (6.0, "forward",    (0.15, 0.0), None),
-    (4.5, "turn left",  (0.0, 0.6),  None),
+    (3.5, "forward",    (0.15, 0.0), None),
+    (3.5, "turn left",  (0.0, 0.6),  None),
     (1.5, "stop",       (0.0, 0.0),  None),
     (1.2, "look left",  (0.0, 0.0),  (0.30, 0.0)),
     (1.4, "look right", (0.0, 0.0),  (-0.35, 0.0)),
@@ -150,7 +150,7 @@ def main():
     ap.add_argument("--out", default=os.path.join(WS, "docs", "media", "hexapod_walking.gif"))
     ap.add_argument("--fps", type=int, default=12, help="camera and GIF frame rate")
     ap.add_argument("--width", type=int, default=640, help="GIF width in pixels")
-    ap.add_argument("--distance", type=float, default=1.4, help="camera distance (m)")
+    ap.add_argument("--distance", type=float, default=1.7, help="camera distance (m)")
     ap.add_argument("--height", type=float, default=0.55, help="camera height above target (m)")
     ap.add_argument("--side", type=float, default=40.0, help="degrees to the robot's left")
     ap.add_argument("--preview", action="store_true", help="save one still and exit")

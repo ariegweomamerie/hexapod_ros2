@@ -237,23 +237,31 @@ RViz shows the robot model plus a **Face Camera** panel with the live camera fee
 ## 7. Drive it
 
 Send velocity commands on the `/cmd_vel` topic (standard ROS convention:
-`linear.x` = forward, `linear.y` = sideways, `angular.z` = turn):
+`linear.x` = forward, `linear.y` = sideways, `angular.z` = turn).
+
+> **Keep the commands coming.** For safety, the gait has a **command watchdog**:
+> if no `/cmd_vel` arrives for **0.5 s**, the robot stops and steps back into its
+> stand pose. This is what you want when a program (for example Nav2) crashes. It
+> also means a single message only moves the robot briefly. Publish continuously
+> with `-r 10` (10 messages per second), and press **Ctrl+C** to stop.
 
 ```bash
-# walk forward (toward the face)
-ros2 topic pub /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.12}}'
+# walk forward (toward the face) — Ctrl+C to stop
+ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.12}}'
 
 # strafe (step sideways)
-ros2 topic pub /cmd_vel geometry_msgs/msg/Twist '{linear: {y: 0.10}}'
+ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist '{linear: {y: 0.10}}'
 
 # turn in place
-ros2 topic pub /cmd_vel geometry_msgs/msg/Twist '{angular: {z: 0.4}}'
+ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist '{angular: {z: 0.4}}'
 
-# stop
+# stop right away (instead of waiting for the watchdog)
 ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist '{}'
 ```
 
-Prefer the keyboard? Drive it live with the arrow-style keys:
+Prefer the keyboard? Drive it live with the arrow-style keys. It sends a
+command on each key press and key repeat, so **hold the key** to keep walking;
+the robot stops shortly after you let go:
 ```bash
 ros2 run teleop_twist_keyboard teleop_twist_keyboard
 ```
@@ -272,8 +280,9 @@ ros2 run rqt_image_view rqt_image_view /face_camera/image
 
 **Move the head (pan/tilt):** send `[pan, tilt]` in radians to `/head/cmd`
 (needs the head controller from Terminal 3). **`[0, 0]` looks straight ahead.**
-Pan ranges −0.38…0.32 (left is positive); tilt ranges −0.42…0.62 (up is
-positive, down is negative):
+Pan ranges −0.36…0.30 (left is positive); tilt ranges −0.40…0.60 (up is
+positive, down is negative). Those are the model's limits kept 0.02 rad clear of
+the hard stops, so the head never stalls against an end stop:
 ```bash
 # look left and slightly down
 ros2 topic pub --once /head/cmd std_msgs/msg/Float64MultiArray "{data: [0.25, -0.2]}"
@@ -309,13 +318,24 @@ hasn't finished yet.
 3. **Gait** (`hexapod_gait`) — the walking brain. It keeps a **tripod clock**; each
    foot follows a **D-shaped path** (a flat push along the ground, then a lifted
    swing forward). It converts those foot paths into joint angles and streams them
-   to the controllers ~50 times per second.
+   to the controllers ~50 times per second, on **simulation time**, so the gait
+   stays in step with the physics even when Gazebo runs slower than real time.
+   The leg controller starts each streamed trajectory from its last *desired*
+   position (not the measured one), and the simulated servos respond in ~33 ms, so
+   the legs carry out ~95% of the planned motion instead of about a third.
 4. **Two poses, one footprint** — both poses use the same symmetric stance
    directions at the same 143 mm body height. **Stand** (idle) places the feet
    150 mm from each hip for a wide, stable base. **Walk** pulls them in to 120 mm so
-   every leg has room for full strides. Starting or stopping only moves the feet in
-   or out — no height change, no twisting.
-5. **Head** (`hexapod_head`) — turns a simple "look here" command (`/head/cmd`)
+   every leg has room for full strides.
+5. **Clean starts and stops** — the gait runs as a small state machine
+   (`standing → starting → walking → stopping`). To switch between the two poses,
+   the feet **step** one tripod at a time: a foot is only moved while it is
+   lifted, and the other three feet stay planted, so no foot is dragged across
+   the ground. A start takes 0.3 s, and the robot is back in its stand pose
+   about 0.8 s after a stop command, with no foot dragging more than ~3 mm.
+6. **Command watchdog** — if `/cmd_vel` goes quiet for 0.5 s, the gait treats it
+   as a stop request and the robot steps back into its stand pose.
+7. **Head** (`hexapod_head`) — turns a simple "look here" command (`/head/cmd`)
    into a smooth, speed-limited move of the pan/tilt face. It reads the head's
    limits from the robot model, so they always match the URDF.
 
@@ -381,6 +401,11 @@ ros2 daemon stop && ros2 daemon start
 **The robot stands but won't walk.** Make sure the gait node (Terminal 2) is
 running and prints `Gait running`, and that you're publishing to `/cmd_vel`.
 
+**The robot takes a step or two, then stops.** That's the command watchdog: it
+stops the robot when `/cmd_vel` is quiet for 0.5 s. Publish continuously
+(`ros2 topic pub -r 10 ...`), not once. The gait prints
+`No /cmd_vel for 0.50 s: stopping (command watchdog)` when this happens.
+
 **The head doesn't move.** Make sure the head controller (Terminal 3) is running
 and prints `Head ready.`, and that you send exactly two numbers, e.g.
 `"{data: [0.2, 0.0]}"`. Its terminal prints a warning when a command is rejected
@@ -394,8 +419,8 @@ Development follows a staged **simulation roadmap**, worked **one stage at a tim
 stage is verified and approved before the next one starts. The full plan, the current
 status and the test results are in **[docs/ROADMAP.md](docs/ROADMAP.md)**.
 
-1. Stable basic gait ← **current stage** (verification: `python3 verification/stage1_basic_gait.py`)
-2. SLAM
+1. Stable basic gait ✅ passed 2026-09-29, 75/75 checks twice (`python3 verification/stage1_basic_gait.py`)
+2. SLAM ← **current stage**
 3. Localization
 4. Nav2
 5. Navigation tuning

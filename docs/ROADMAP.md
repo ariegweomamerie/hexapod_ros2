@@ -24,7 +24,7 @@ Verification scripts live in [`verification/`](../verification/README.md), one p
 
 | Stage | Name | Status |
 |------:|------|--------|
-| 1 | Stable basic gait | 🔶 **In verification** — 56/57 checks pass; 1 open issue (see Stage 1) |
+| 1 | Stable basic gait | ✅ **Passed** 2026-09-29 — 75/75 checks, twice (see Stage 1) |
 | 2 | SLAM | ⬜ Not started |
 | 3 | Localization | ⬜ Not started |
 | 4 | Nav2 | ⬜ Not started |
@@ -67,60 +67,87 @@ not yet verified at its stage · ⬜ not started
 
 ## Stage 1 — Stable basic gait
 
-**Goal:** the existing hexapod stands correctly, walks forward and backward, turns, and
-responds correctly to `/cmd_vel`. Keep the current gait. Do not redesign it for speed.
+**Goal:** the existing hexapod stands correctly, walks forward and backward, turns,
+strafes and follows curves, and responds correctly to `/cmd_vel`. It must stop cleanly,
+without dragging its feet, and stop by itself if commands are lost. Keep the current
+gait. Do not redesign it for speed.
 
-**Verification:** `python3 verification/stage1_basic_gait.py` (about 2.5 min, needs Gazebo
-and the gait running). Robot motion is measured from Gazebo ground truth, not from the
-robot's own reports.
+**Closed 2026-09-29: 75/75 required checks, in two consecutive runs.**
 
-**Run 2026-09-17 — 56/57 required checks passed:**
+**Verification:**
+- `python3 verification/stage1_basic_gait.py` — 75 checks in Gazebo against ground truth.
+- `colcon test --packages-select hexapod_gait hexapod_head` — 23 offline unit tests.
 
-| Area | Result | Measured |
-|------|--------|----------|
-| Stand (initial and final) | ✅ | 143.0 mm high, 0.00° tilt, joints within 0.02°, all 6 feet down, 0 drift |
-| Walk forward (`x = +0.10`) | ✅ | +27.7 cm in 10 s (2.77 cm/s), 0.8 cm sideways, −0.5° heading change |
-| Walk backward (`x = −0.10`) | ✅ | −27.4 cm in 10 s, 1.2 cm sideways, −1.1° heading change |
-| Turn left / right (`z = ±0.4`) | ✅ | +60.7° / −59.2° in 10 s (about 6°/s), body centre moved ≤ 1.1 cm |
-| Strafe left / right (`y = ±0.10`) | ✅ | +23.5 / −20.0 cm in 8 s, yaw change within ±0.6° |
-| Arc (`x = 0.08, z = 0.3`) | ✅ | +15.7 cm forward, +37.5° |
-| Tripod gait | ✅ | Every sample: only one tripod in the air (Gazebo foot heights) |
-| Body stability while walking | ✅ | Tilt ≤ 0.1°, height 132–144 mm |
-| Leg command stream | ✅ | 50.0 Hz steady |
-| Deadband (`x = 0.005`) | ✅ | No steps, 0 drift |
-| Oversized command (`x = 1, z = 1`) | ✅ | No warnings, stable, still moves |
-| Gait warnings/errors | ✅ | 0 |
-| **Stop → stand transition** | ❌ | **1.20–1.30 s to settle (criterion ≤ 1.0 s), 8/8 stops** |
+### Final results (two runs, same setup)
 
-**Open issue: the stop transition drags the feet.** On a zero command the gait jumps
-straight from the walking pose (feet 120 mm from each hip) to the standing pose
-(150 mm). The planted feet are dragged 14–40 mm across the ground, and the lifted
-tripod is pushed straight down. Friction slows the joints, so they settle in about
-1.2 s, and the body shifts about 18 mm and 1.5° on every stop. Starting to walk
-presumably does the same in reverse, but that transition was not measured. It
-matters for Stage 4, because Nav2 starts and stops often near a goal. Decision
-pending:
+| Measurement | Limit | Run A | Run B |
+|---|---|---|---|
+| Required checks | all | **75/75** | **75/75** |
+| Worst planted-foot slide when stopping | ≤ 5.0 mm | 2.8 mm | 2.7 mm |
+| Worst planted-foot slide when starting | ≤ 5.0 mm | 0.6 mm | 0.6 mm |
+| Slowest return to the stand pose | ≤ 1.0 s | 0.83 s | 0.82 s |
+| Standing again after `/cmd_vel` goes silent | ≤ 1.5 s | 1.32 s | 1.32 s |
+| Gazebo real-time factor during the run | reported | 0.93 | 0.93 |
 
-- **Option A:** accept the transition as it is and relax the criterion.
-- **Option B (recommended):** move the feet between the two footprints only while
-  they are lifted ("step into stand / step out of stand"), then re-verify.
+Walking (run B): forward 84.0 cm and backward 85.9 cm in ~10 s (about 8.4 cm/s),
+turning ±19°/s, strafing ±72 cm in ~8 s, body tilt ≤ 0.1°, one tripod lifted at a
+time in 100% of samples, 50 Hz leg command stream, and no gait warnings or errors.
 
-**Findings to carry forward (not Stage 1 failures):**
+### What changed in this stage
 
-- **No `/cmd_vel` timeout.** If the command publisher stops without sending zero, the
-  robot keeps walking on the last command. This is a safety risk once Nav2 drives the
-  robot. Adding a timeout changes how `ros2 topic pub` (1 Hz) and
-  `teleop_twist_keyboard` behave, so it needs a decision.
-- **Actual speed is about 28% of the command** (forward 0.10 m/s gives 2.77 cm/s;
-  turning 0.4 rad/s gives about 6°/s). Nav2 velocity limits and controller tuning must
-  account for this in Stage 4. It is not a Stage 1 goal.
-- **The gait's stride limit.** Stride saturates at about 0.2 m/s of translation or about
-  0.7 rad/s of rotation. Beyond that, legs are clamped individually, and a combined
-  command loses most of its turn: `x = 1, z = 1` turned only 6° in 5 s. Nav2 limits
-  must stay inside this range.
-- **`/odom` is perfect in simulation.** It comes from Gazebo's OdometryPublisher, which
-  is ground-truth based and has no slip error, while the real robot's odometry will
-  drift. Keep this in mind when judging SLAM and localization.
+1. **Lifted-foot start/stop transitions.** The gait is a small state machine
+   (`STANDING → STARTING → WALKING → STOPPING`). Feet move between the walking and
+   standing footprints **only while lifted**, one tripod at a time, with a short
+   settle pause before the other tripod lifts. Steady walking is untouched, and a
+   unit test proves the stride matches the original formula exactly.
+2. **`/cmd_vel` watchdog (0.5 s).** If commands stop arriving, the gait stops the
+   robot through that same safe transition. README examples publish continuously.
+3. **Simulation time.** The gait's control timer, phase, transitions and watchdog run
+   on Gazebo's `/clock`, as do the verification's measurements. Before this, the gait
+   ran on wall-clock time and stepped too fast for the physics whenever Gazebo fell
+   behind real time, which made results depend on machine load.
+4. **Leg controller: `interpolate_from_desired_state`.** Each streamed trajectory used
+   to restart interpolation from the lagging *measured* state, which delayed commands
+   150–180 ms and executed only 27–39% of the planned joint motion.
+5. **Faster simulated servos with soft limits.** `position_proportional_gain` 0.1 → 0.3
+   (~0.1 s → ~33 ms response). At 0.3 a gravity-loaded joint driven exactly onto a hard
+   stop locks up in the physics engine, so the head node keeps commands 0.02 rad inside
+   the URDF limits (verified: 5 full-range cycles with no sticking, versus jamming on
+   the first attempt without the margin).
+6. **Better verification.** Checks for planted-foot dragging (start and stop),
+   continuous walking, and the watchdog; stops now sample different gait phases; the
+   real-time factor is recorded; phase windows are half-open.
+
+Items 4 and 5 fixed the root cause: the legs now execute ~95% of the planned motion
+instead of about a third, so they are no longer still catching up when a foot takes
+load. As a side effect, walking is about 3× faster with the gait itself unchanged
+(2.8 → 8.4 cm/s at the same command).
+
+### How it got there
+
+| Attempt | Result |
+|---|---|
+| Original gait | 56/57 — stop took 1.2–1.3 s, feet dragged 14–40 mm |
+| New drag/watchdog checks on the original gait | 64/75 — baseline proving the checks catch it |
+| Lifted-foot transitions + watchdog | 73/75 — starting clean, stops still slid 6–9 mm |
+| \+ controller interpolation fix | 75/75, but only 0.2 mm of margin |
+| \+ simulation time, pause tuned to 0.075 s | 74/75 and 75/75 — repeatable, but on the 5 mm limit |
+| Gentler step profile ("Option 1") | Rejected: worst case 5.6–8.2 mm. Measurement showed the slide comes from lagging servos catching up on a planted foot, which a smoother path cannot remove |
+| Faster servos + soft limits ("Option 2") | **75/75 twice, worst slide 2.7–2.8 mm** |
+
+### Findings to carry forward
+
+- **Stride limit.** The stride saturates at about 0.2 m/s of translation or 0.7 rad/s of
+  rotation, each leg clamped separately. Nav2 limits must stay inside this range.
+- **`/odom` is perfect in simulation.** It comes from Gazebo's OdometryPublisher and has
+  no slip error, while a real robot's odometry drifts. Keep this in mind when judging
+  SLAM and localization.
+- **Leg joints still use hard limits.** A 0.02 rad margin in the leg IK would clip the
+  walking swing of `leg_l3`, so only the head has soft limits. The legs showed no
+  sticking in four full runs at the faster gain; revisit if a leg ever freezes.
+- **Test environment.** Results are reported with Gazebo's real-time factor. A GNOME
+  screen recording (~1100% CPU) once dropped it to 0.6 and produced two misleading
+  failures. Use `demo/record_walk_gif.py` to record the robot instead.
 
 ## Stage 2 — SLAM
 
