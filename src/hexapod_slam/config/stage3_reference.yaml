@@ -1,4 +1,5 @@
-# Stage 3 canonical localization reference - the frozen Stage 2.4 map.
+# Stage 3 canonical localization reference - the frozen Stage 2.4 map, with its
+# visual vocabulary repaired.
 #
 # This file is the repository's record of WHICH map Stage 3 localizes against
 # and what that map must look like. The database itself is a multi-hundred-MB
@@ -15,9 +16,9 @@
 
 stage3_reference:
   # ---------------------------------------------------------------- identity
-  path: verification/runs/stage2_vo_stage24_texture_20260930_180046/rtabmap_texture_snapshot.db
-  sha256: "8e93c79e50d8a0c9767bfefce8d6490ed996e185684cfbfc5993251aa78de1cc"
-  size_bytes: 387612672
+  path: verification/runs/stage3_reference_frozen_20261001_000050/rtabmap_stage3_reference.db
+  sha256: "9366c429b55820086405263d28f80146243d914b37c54ee0e91ef6bc460e4a93"
+  size_bytes: 389603328
 
   # ------------------------------------------------- what must be inside it
   # A reference with no vocabulary cannot relocalise at all: RTAB-Map matches
@@ -25,7 +26,12 @@ stage3_reference:
   # size alone does NOT catch that, which is exactly how the bad candidate got
   # as far as being proposed.
   integrity_check: ok
-  vocabulary_words: 5159
+  # 35907 after the repair, up from the 5159 the Stage 2.4 run saved. The map
+  # itself is untouched: nodes, links and features are identical, and only the
+  # Word table grew. Completeness is measured over positive word ids referenced
+  # by pose-graph nodes, which is 0 missing here; the 452 negative ids are
+  # surplus features beyond Kp/MaxFeatures and are not dictionary entries.
+  vocabulary_words: 35907
   visual_features: 174973
   nodes: 587
   nodes_with_features: 587
@@ -54,6 +60,20 @@ stage3_reference:
   produced_on: "2026-09-30"
   implementation_commits: ["a6275a4", "82301e2"]
   snapshot_taken: after-clean-shutdown
+  # The map came from the Stage 2.4 validation run; the dictionary was then
+  # repaired and frozen on 2026-10-01. The repair was RTAB-Map's own mechanism:
+  # load the database, let it regenerate the missing entries for the nodes it
+  # puts in working memory, shut down cleanly so they are saved. Nothing else
+  # ran - no Gazebo, no gait, no camera, no localisation - and the pose graph
+  # came out identical.
+  promoted_on: "2026-10-01"
+  promoted_from: verification/runs/stage3_reference_repair_20260930_232339/reference_repaired.db
+  repair_mechanism: rtabmap-load-and-clean-shutdown
+  # Both predecessors are kept on disk for auditability; neither is used.
+  superseded_reference:
+    path: verification/runs/stage2_vo_stage24_texture_20260930_180046/rtabmap_texture_snapshot.db
+    sha256: "8e93c79e50d8a0c9767bfefce8d6490ed996e185684cfbfc5993251aa78de1cc"
+    reason: "30748 positive vocabulary ids missing for its 137 pose-graph nodes"
   # Recorded so it is never reused by mistake:
   rejected_candidate:
     path: verification/runs/stage2_vo_stage24_clean_20260930_142841/rtabmap_baseline_snapshot.db
