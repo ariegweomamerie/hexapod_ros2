@@ -201,8 +201,14 @@ def write_models(root):
     textures = T.all_textures()
     for name, img in textures.items():
         # Saved smaller and palette-quantised: the patterns survive at camera range
-        # and the repo does not carry 20 MB of per-pixel noise.
-        small = img.resize((SAVE_PX, SAVE_PX), Image.LANCZOS)
+        # and the repo does not carry 20 MB of per-pixel noise. A texture drawn
+        # non-square is one meant for a non-square face (the wall decals), so its
+        # aspect is kept - squashing it into SAVE_PX^2 would smear the pattern
+        # back out again when the face stretches it.
+        w, h = img.size
+        scale = SAVE_PX / max(w, h)
+        size = (max(1, round(w * scale)), max(1, round(h * scale)))
+        small = img.resize(size, Image.LANCZOS)
         small.convert("P", palette=Image.ADAPTIVE, colors=96).save(
             os.path.join(tex_dir, f"{name}.png"), optimize=True)
     return len(textures)
@@ -272,6 +278,13 @@ def build_world():
         links.append(box(f"doorframe_{i}", size, pose, "pillar_paint"))
     for i, (tex, x, y, yaw, z) in enumerate(L.SIGNS):
         links.append(box(f"sign_{i}", "0.55 0.03 0.40", f"{x} {y} {z} 0 0 {yaw}", tex))
+    # Wall decals are laid ON an existing wall face and are visual only: no
+    # collision box, so the robot's world is geometrically identical with or
+    # without them. They add the surface detail a camera 0.06 m off the floor
+    # needs where a corridor dead-ends in a bare kick plate.
+    for i, (tex, x, y, yaw, z, length, height) in enumerate(L.DECALS):
+        links.append(box(f"decal_{i}", f"0.010 {length:.3f} {height:.3f}",
+                         f"{x:.3f} {y:.3f} {z:.3f} 0 0 {yaw}", tex, collide=False))
     parts.append(f"""
     <model name="building">
       <static>true</static>{one_link("structure", ''.join(links))}
@@ -416,7 +429,8 @@ def main():
     print(f"models   : {len(prop_models())} props + slam_assets")
     print(f"world    : {os.path.relpath(world_path, PKG)} "
           f"({len(list(L.wall_boxes()))} wall boxes, {len(list(L.door_frames()))} door frames, "
-          f"{len(L.PROPS)} props, {len(L.SIGNS)} signs, {len(list(L.zone_rects()))} floor slabs)")
+          f"{len(L.PROPS)} props, {len(L.SIGNS)} signs, {len(L.DECALS)} decals, "
+          f"{len(list(L.zone_rects()))} floor slabs)")
     print(f"map      : {os.path.relpath(map_path, PKG)}")
 
 

@@ -83,6 +83,45 @@ real robot (Raspberry Pi + servos).
 > 🎥 Re-record the walking GIF any time (with Gazebo, the gait and the head
 > running): `python3 demo/record_walk_gif.py`
 
+### Mapping with RGB-D SLAM (Stage 2)
+
+The robot carries a small RGB-D camera on its head, works out its own motion
+from what that camera sees (no wheel encoders, no GPS, no cheating from the
+simulator), and builds a map of the industrial facility it walks around.
+
+<p align="center">
+  <img src="docs/images/stage2_4/stage24_texture_map.png" alt="Occupancy grid and pose graph after one lap of the ring" width="820"><br>
+  <em><b>Figure 5.</b> One 25.19 m lap of the ring corridor: the occupancy grid
+  RTAB-Map built and the pose graph it optimised. 137 graph poses, largest step
+  between them 21.6 cm, no breaks.</em>
+</p>
+
+<p align="center">
+  <img src="docs/images/stage2_4/stage24_texture_trajectory.png" alt="Visual odometry against ground truth" width="820"><br>
+  <em><b>Figure 6.</b> Visual odometry (blue) against Gazebo ground truth
+  (green) over the same lap — 0.276 m ATE, 2.1% drift, not a single lost frame.</em>
+</p>
+
+Getting there took some detective work. The camera sits **6 cm** off the floor,
+and at one corner of the ring it ended up staring at a blank painted wall from
+35 cm away — no corners, no edges, nothing to track, so the odometry died at the
+same spot every single run. The fix was one small strip of surface detail on
+that one wall:
+
+<p align="center">
+  <img src="docs/media/nw_corner_before_after.gif" alt="The NW corner before and after adding surface detail" width="820"><br>
+  <em><b>Figure 7.</b> The same approach, before and after. Green dots are the
+  image features the odometry tracks — on the left they run out completely.</em>
+</p>
+
+The whole investigation, with measurements, is in
+**[docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md)**.
+
+```bash
+./run_slam.sh                 # Gazebo + RViz + gait + visual odometry + RTAB-Map
+./run_slam.sh headless:=true  # no Gazebo GUI, for benchmark runs
+```
+
 ---
 
 ## 3. The robot, explained simply

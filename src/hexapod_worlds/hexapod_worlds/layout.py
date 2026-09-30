@@ -169,6 +169,26 @@ SIGNS = [
     ("panel_grid", 0.12, 7.4, 1.5708, 0.9),
 ]
 
+# Wall decals: (texture, x, y, yaw, z, length, height) - VISUAL ONLY, no
+# collision, a 10 mm plate laid on an existing wall face. They exist for one
+# reason: the face camera sits 0.060 m off the floor, so where a corridor ends
+# in a bare wall the whole frame fills with that wall's kick plate, and a flat
+# painted band gives a corner detector nothing at all.
+#
+# The ring's NW corner (3.30, 7.70) is the only place in the facility where that
+# happens. Measured through the robot's own camera, ORB keypoints there:
+#
+#     SW corner  385-531      NE corner  503-811
+#     SE corner   15-339      NW corner    0-6      <- visual odometry dies here
+#
+# The west wall at that corner wears "wall_parts", the one plant_wall in the
+# facility with neither an accent band nor a label, so below 0.4 m it is a
+# single flat grey. This strip runs along the stretch the camera stares into on
+# the final approach and through the first 30 deg of the turn.
+DECALS = [
+    ("kick_service_strip", R_OUT[0] + WALL_T / 2 + 0.005, 7.65, 0.0, 0.20, 1.30, 0.36),
+]
+
 LIGHTS = [
     # One lamp per major area: enough to vary brightness between places without
     # paying for a dozen dynamic lights while the camera renders every frame.

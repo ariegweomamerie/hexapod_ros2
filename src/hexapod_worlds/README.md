@@ -85,3 +85,11 @@ Structure and style are separate on purpose: change `layout.py` to move rooms,
 - All geometry is merged into a few links. Built as one link per box, the same facility
   ran at half the real-time factor.
 - Shadows are off and lighting is kept to nine lamps: the budget goes to RGB-D rendering.
+- **Decals** (`layout.DECALS`) are surface detail laid on an existing wall face, emitted
+  with `collide=False` so the robot's world stays geometrically identical with or without
+  them. They exist because the face camera sits only **0.060 m** off the floor: where a
+  corridor dead-ends in a bare wall, the whole frame fills with that wall's kick plate,
+  and a flat painted band gives a feature detector nothing. There is one, on the ring's
+  NW corner — see `docs/KNOWN_ISSUES.md` for the measurements that justify it.
+- A texture drawn non-square keeps its aspect when saved, so a wide decal strip stays
+  sharp on the wide face it is mapped onto.

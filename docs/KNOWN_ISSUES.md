@@ -834,3 +834,188 @@ segfaulted on load. Avoid runtime spawn/remove of RGB-D sensors on this build.
 * `verification/runs/stage2_vo_runA_ring_20260929_204830/` - the run, its bag and plots
 * `.../failure/` - the frames either side of the loss: 986, 947, 712, 475 features,
   then 0
+
+---
+
+## 2. The ring's NW corner gave the camera nothing to look at
+
+**Status: fixed 2026-09-30 by one visual-only decal. Root cause understood.**
+
+### What happened
+
+Through Stage 2.4 the visual odometry kept failing at one place: about 21 m
+into the 25.19 m ring, at the corridor's north-west corner (world `3.30, 7.70`).
+Three runs died or stumbled there and nowhere else - 20.96 m, 20.98 m, 21.03 m.
+Two parameter experiments (`Vis/PnPVarianceMedianRatio`, `Odom/ResetCountdown`)
+moved the symptom around without removing it.
+
+### Why: a 6 cm camera and a flat kick plate
+
+The face camera sits **0.060 m** above `base_footprint`, measured, not assumed:
+
+```
+$ ros2 run tf2_ros tf2_echo base_footprint face_camera_optical_frame
+- Translation: [0.124, -0.162, 0.060]
+```
+
+`textures.py` was written for a camera at 0.14 m. At 0.060 m, with an 87 deg
+field of view, a wall 0.35 m away fills the frame from the floor to 0.31 m up -
+and the bottom 0.39 m of every `plant_wall` texture is a **solid kick plate with
+no detail in it**. Walking west along the north leg, the robot drives straight
+at the west wall, and the last 0.6 m of that approach is a single flat grey.
+
+Measured through a probe camera with the robot's exact intrinsics, height and
+forward offset, ORB keypoints at each ring corner on the final approach:
+
+| corner | approach 0.4 m | 0.2 m | at the corner | turning 15 deg |
+|--------|---------------:|------:|--------------:|---------------:|
+| SW     | 417 | 385 | 398 | 475 |
+| SE     | 522 | 157 |  15 |  39 |
+| NE     | 603 | 503 | 515 | 811 |
+| **NW** | **18** | **0** | **0** | **0** |
+
+Not "few features" - **zero**. The NW corner is the only one where this
+happens, because the wall there wears `wall_parts`, the one `plant_wall` in the
+facility with neither an accent band nor a label, so below 0.4 m it is one flat
+tone. Every other corner has a doorframe, a pillar, a handrail or a fence mesh
+inside the camera's 0.5 m cone.
+
+![the NW corner before and after](media/nw_corner_before_after.gif)
+
+*The same approach, before and after, ORB keypoints drawn on. Left: the frame
+fills with kick plate and the detector finds nothing.*
+
+The full sweep, frame by frame with the count on each - the last stretch of the
+north leg, the corner turn, then away down the west leg:
+
+| before | after |
+|---|---|
+| ![before](images/stage2_4/stage24_nw_corner_before.png) | ![after](images/stage2_4/stage24_nw_corner_after.png) |
+
+### The fix: one visual-only decal, 1.30 m of wall
+
+A `kick_service_strip` texture - trunking lid, bolt pairs, conduit clips and
+stencilled panel codes `P-14/15/16`, all within about 45 grey levels of the kick
+plate it sits on, so it is quiet to the eye but every element is a hard step
+edge. It is laid on the existing west wall face as a 10 mm plate at
+`x = 2.680, y = 7.65, z = 0.20`, spanning 1.30 m x 0.36 m: exactly the band the
+camera stares into.
+
+It is declared in `layout.DECALS` and emitted by `generate.py` with
+`collide=False`, so it is **geometrically invisible to the robot**:
+
+```
+collision elements before: 95   after: 95
+identical collision set: True
+added: none  removed: none
+```
+
+The regenerated world differs from the previous one by exactly one `<visual>`
+element and nothing else.
+
+![feature counts before and after](images/stage2_4/stage24_nw_corner_features.png)
+
+Localisation of the change is measured, not asserted: every probe reading at
+the SW, SE and NE corners is **identical to the digit** before and after. Only
+the NW corner moved, from 0-18 keypoints to 207-909.
+
+### The ring that followed
+
+One run, `Vis/PnPVarianceMedianRatio: 2`, `Odom/ResetCountdown: 0`,
+`Vis/MinInliers: 20`, `RGBD/OptimizeMaxError: 3.0`, all four verified on the
+live nodes before driving, fresh database, no screen recorder:
+
+| | clean baseline | ratio 2 | ratio 2 + reset | **+ NW strip** |
+|---|---:|---:|---:|---:|
+| `Vis/PnPVarianceMedianRatio` | 4 | 2 | 2 | 2 |
+| `Odom/ResetCountdown` | 0 | 0 | 1 | 0 |
+| ground-truth path (m) | 25.23 | 25.23 | 25.23 | 25.19 |
+| odometry path (m) | 26.29 | 22.96 | 25.62 | **25.44** |
+| ATE RMSE (m) | 0.774 | 1.827 | 0.343 | **0.276** |
+| final position error (m) | 1.242 | 3.028 | 1.148 | **0.537** |
+| drift per metre | 4.92% | 12.00% | 4.55% | **2.13%** |
+| final yaw error (deg) | 7.55 | 7.41 | 17.23 | **2.19** |
+| lost frames | 0 | 272 | 2 | **0** |
+| first loss | none | 20.98 m | 21.03 m | **none** |
+| worst frame, features | 76 | 84 | - | **136** |
+| worst frame, inliers | 25 | 0 | - | **35** |
+| SLAM final position error (m) | - | - | 9.351 | **0.560** |
+| SLAM final yaw error (deg) | - | - | 179.95 | **2.17** |
+
+![trajectory](images/stage2_4/stage24_texture_trajectory.png)
+
+Odometry confidence per leg, from `/odom`'s own covariance in the bag:
+
+| leg | texture run: null frames | std dev mean | ratio-2 run: null frames |
+|---|---:|---:|---:|
+| 0-8.4 m south | 0 | 11.70 mm | 0 |
+| 8.4-12.8 m east | 0 | 8.81 mm | 0 |
+| 12.8-20 m north | 0 | 18.33 mm | 0 |
+| **20-21.6 m NW corner** | **0** | **7.53 mm** | 45 of 105 |
+| 21.6-25.2 m west | 0 | 17.24 mm | **216 of 216 - never recovered** |
+
+The corner that used to kill the odometry is now the **most confident stretch of
+the whole ring**: a close, well-lit, high-contrast target at a known range is
+about the best thing a PnP front end can be given.
+
+### What this run also settled: there is no loop-closure problem
+
+Every rejected candidate in the run was placed on the ground-truth ring by
+timestamp and checked against where the robot actually was:
+
+```
+inlier-rejected candidates : 55  ->  genuine same-place: 0,  look-alikes: 55
+graph-rejected candidates  : 21  ->  genuine same-place: 0,  look-alikes: 21
+return-to-START candidates :  0
+```
+
+Every one is a pair 4.6-9.5 m apart with the robot facing **~180 deg opposite** -
+the south leg matched against the north leg. Those are the corridor look-alikes
+this facility was deliberately built to contain (`layout.py`: *"the two long
+corridor legs share, on purpose"*). RTAB-Map rejecting them is correct
+behaviour, and `RGBD/OptimizeMaxError = 3.0` is doing its job. **It must not be
+lowered.**
+
+The two closures RTAB-Map *did* accept are genuine: nodes 148 and 149 (14.6 and
+14.8 m into the ring) back to node 138 (12.75 m) - looking back at the NE corner
+after turning it. They are the first real loop closures accepted in any Stage
+2.4 run, and they pulled the graph's end-to-start gap from the raw odometry's
+0.537 m down to **0.311 m**.
+
+This supersedes the earlier baseline analysis, which asked the right question
+of the wrong run. On the ratio-4 baseline, 63 candidates were rejected and over
+half of them cleared the inlier gate, which made `Vis/MinInliers` look innocent
+and pointed at graph consistency:
+
+![baseline loop-closure analysis](images/stage2_4/stage24_loop_closure_analysis.png)
+
+![baseline trajectory](images/stage2_4/stage24_baseline_trajectory.png)
+
+That reading held up - `Vis/MinInliers` was not the blocker - but the right-hand
+panel above was measuring *true distance between the two places* without also
+checking which way the robot was facing. Once heading is included, the
+"graph-rejected ones are real revisits" conclusion does not survive: they are
+the same corridor seen from opposite ends.
+
+There were **no return-to-start candidates at all**, in this or any previous
+run, and now we know why: the ring ends facing 92 deg away from where it
+started (ground-truth yaw runs `0.0` to `-1.613` rad). The robot returns to the
+starting *position* but never to the starting *viewpoint*, so there is nothing
+for an appearance-based detector to match. Four runs of "0 accepted
+return-to-start closures" was never a threshold problem - the opportunity was
+never presented.
+
+![map and pose graph](images/stage2_4/stage24_texture_map.png)
+
+Map and graph continuity: 137 graph poses spanning 25.19 m, largest step between
+consecutive poses 0.216 m, **zero gaps over 0.5 m**, one connected occupancy grid
+of 19807 known cells.
+
+### Evidence
+
+* `verification/runs/stage2_vo_stage24_texture_20260930_180046/` - bag, results,
+  console log, database snapshot, and the exact config and diff used
+* `verification/runs/stage2_vo_stage24_ratio2_20260930_165553/` - the run this
+  is compared against, same parameters, no strip
+* `verification/runs/stage2_vo_stage24_clean_20260930_142841/` - the preserved
+  ratio-4 baseline, untouched

@@ -291,6 +291,57 @@ def pipe_metal(seed):
 
 
 # --------------------------------------------------------------------- signs
+# ------------------------------------------------------------------- decals
+def service_strip(seed, base=(86, 86, 92), width=1152, height=320):
+    """A low service strip for the bottom of a wall, drawn WIDE, not square.
+
+    The face camera sits 0.06 m off the floor, so on a close approach the whole
+    frame is the wall's kick plate - a flat painted band with nothing in it. A
+    plant paints its service runs down there: a bolted trunking lid, a conduit
+    with clips, and stencilled panel codes. Same grey as the kick plate it sits
+    on, so it stays quiet to the eye, but every element is a hard step edge, and
+    that is what a corner detector needs.
+    """
+    img = Image.new("RGB", (width, height), base)
+    d = ImageDraw.Draw(img)
+    light, dark = _shift(base, 34), _shift(base, -30)
+    edge = _shift(base, -52)
+
+    # trunking lid across the top third, with its shadow line
+    lid_top, lid_bot = int(height * 0.14), int(height * 0.46)
+    d.rectangle([0, lid_top, width, lid_bot], fill=light)
+    d.line([0, lid_top, width, lid_top], fill=edge, width=4)
+    d.line([0, lid_bot, width, lid_bot], fill=edge, width=5)
+
+    # lid panels: a seam and a bolt pair every 0.22 m of real wall
+    seam = width // 6
+    for k in range(1, 6):
+        x = k * seam
+        d.line([x, lid_top, x, lid_bot], fill=edge, width=4)
+        for by in (lid_top + 26, lid_bot - 26):
+            d.ellipse([x - 9, by - 9, x + 9, by + 9], fill=dark, outline=edge, width=2)
+
+    # conduit below the lid, clipped to the wall at a different pitch, so the
+    # two runs never line up into one repeating pattern
+    cy = int(height * 0.66)
+    d.rectangle([0, cy - 13, width, cy + 13], fill=_shift(base, 18))
+    d.line([0, cy - 13, width, cy - 13], fill=edge, width=3)
+    d.line([0, cy + 13, width, cy + 13], fill=edge, width=3)
+    for k in range(5):
+        x = int((k + 0.5) * width / 5)
+        d.rectangle([x - 14, cy - 22, x + 14, cy + 22], fill=dark, outline=edge, width=3)
+
+    # stencilled panel codes - the part that makes THIS wall this wall
+    f = _font(52)
+    for k, code in enumerate(("P-14", "P-15", "P-16")):
+        d.text((int((k + 0.5) * width / 3) - 58, int(height * 0.79)), code,
+               fill=_shift(base, 62), font=f)
+
+    # scuffed floor line along the very bottom
+    d.rectangle([0, height - 14, width, height], fill=_shift(base, -18))
+    return _grain(img, 6, seed)
+
+
 def sign(text, sub, bg, fg, seed, marks=0):
     img = _base(bg)
     d = ImageDraw.Draw(img)
@@ -383,6 +434,8 @@ def all_textures():
         "sign_storage": sign("STORE", "AISLE 1-6", (250, 234, 214), (170, 88, 28), 56, 4),
         "sign_workshop": sign("SHOP", "MECHANICAL", (226, 244, 246), (28, 110, 118), 57, 4),
         "panel_grid": grid_panel(58),
+        # wall decals (visual only - see layout.DECALS)
+        "kick_service_strip": service_strip(59),
     }
     for i in range(1, 9):                                           # numbered doors D1..D8
         tex[f"door_d{i}"] = sign(f"D{i}", ["LAB", "LOADING", "TESTING", "STORAGE", "WORKSHOP",

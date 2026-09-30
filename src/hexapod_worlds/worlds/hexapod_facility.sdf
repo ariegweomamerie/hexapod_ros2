@@ -1365,6 +1365,17 @@
           </metal></pbr>
         </material>
         </visual>
+        <visual name="decal_0_vis"><pose>2.680 7.650 0.200 0 0 0.0</pose>
+          <geometry><box><size>0.010 1.300 0.360</size></box></geometry>
+          <material>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.15 0.15 0.15 1</specular>
+          <pbr><metal>
+            <albedo_map>model://slam_assets/materials/textures/kick_service_strip.png</albedo_map>
+            <roughness>0.85</roughness><metalness>0.0</metalness>
+          </metal></pbr>
+        </material>
+        </visual>
       </link>
     </model>
     <include>
