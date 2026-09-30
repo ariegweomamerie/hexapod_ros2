@@ -173,6 +173,26 @@ def check_reference(c):
             nodes = con.execute("SELECT COUNT(*) FROM Node;").fetchone()[0]
             l0 = con.execute("SELECT COUNT(*) FROM Link WHERE type=0;").fetchone()[0]
             l1 = con.execute("SELECT COUNT(*) FROM Link WHERE type=1;").fetchone()[0]
+            # Counting Word rows is not enough. A database can hold thousands
+            # of words and still be missing most of the dictionary entries its
+            # own features refer to - which is what the Stage 2.4 reference
+            # turned out to be (5159 rows, 56382 referenced, 51223 missing).
+            # RTAB-Map masks it by rebuilding the dictionary at load time and
+            # only warning, so nothing downstream notices unless this is
+            # measured directly.
+            distinct_fw = con.execute(
+                "SELECT COUNT(DISTINCT word_id) FROM Feature;").fetchone()[0]
+            missing_fw = con.execute(
+                "SELECT COUNT(DISTINCT f.word_id) FROM Feature f "
+                "LEFT JOIN Word w ON w.id = f.word_id WHERE w.id IS NULL;").fetchone()[0]
+            # Which nodes those missing ids belong to decides whether they can
+            # affect localisation: only nodes in the optimised pose graph are
+            # loaded into working memory and matched against.
+            missing_in_graph = con.execute(
+                "SELECT COUNT(DISTINCT f.word_id) FROM Feature f "
+                "LEFT JOIN Word w ON w.id = f.word_id WHERE w.id IS NULL AND EXISTS "
+                "(SELECT 1 FROM Link l WHERE l.type=0 AND "
+                "(l.from_id=f.node_id OR l.to_id=f.node_id));").fetchone()[0]
         finally:
             con.close()
     except sqlite3.DatabaseError as exc:
@@ -186,13 +206,21 @@ def check_reference(c):
 
     c.ok(4, integrity) if integrity == "ok" else c.bad(4, integrity)
 
+    detail = (f"word_rows={words} distinct_feature_word_ids={distinct_fw} "
+              f"missing_feature_word_ids={missing_fw} "
+              f"(of which {missing_in_graph} belong to pose-graph nodes)")
     if words == 0 or feats == 0:
-        c.bad(5, f"words={words} features={feats} - RTAB-Map cannot relocalise at all")
+        c.bad(5, f"{detail} - RTAB-Map cannot relocalise at all")
     elif words != ref['vocabulary_words'] or feats != ref['visual_features']:
-        c.bad(5, f"words={words} (want {ref['vocabulary_words']}), "
-                 f"features={feats} (want {ref['visual_features']})")
+        c.bad(5, f"{detail} - expected word_rows={ref['vocabulary_words']}, "
+                 f"features={ref['visual_features']}")
+    elif missing_fw:
+        # Word rows present but the dictionary is incomplete. RTAB-Map will
+        # rebuild what it can at load and carry on, so this fails here rather
+        # than being discovered from a run's results.
+        c.bad(5, f"{detail} - dictionary incomplete")
     else:
-        c.ok(5, f"{words} words, {feats} features")
+        c.ok(5, detail)
 
     if nodes != ref['nodes'] or l0 != ref['links_neighbour'] or l1 != ref['links_accepted']:
         c.bad(6, f"nodes={nodes}/{ref['nodes']} neighbour={l0}/{ref['links_neighbour']} "
