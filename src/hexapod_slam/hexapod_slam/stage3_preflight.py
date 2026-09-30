@@ -133,6 +133,62 @@ def sh(cmd, timeout=20):
         return ""
 
 
+# The set of nodes that constitutes the localisation reference. RTAB-Map loads
+# the OPTIMISED POSE GRAPH into working memory (Mem/InitWMWithAllNodes=true), and
+# a node is in that graph when it carries at least one neighbour link (Link.type
+# = 0). Nodes outside it - in this reference, the 450 recorded while the robot
+# stood still before the drive - are never loaded and never matched against, so
+# their vocabulary cannot affect localisation.
+#
+# It is defined once, here, as a named view rather than inlined into each query,
+# so the scope of the check is auditable in one place instead of being implied
+# by a subquery repeated three times.
+POSE_GRAPH_NODES_SQL = """
+    SELECT n.id AS node_id FROM Node n
+    WHERE EXISTS (SELECT 1 FROM Link l
+                  WHERE l.type = 0 AND (l.from_id = n.id OR l.to_id = n.id))
+"""
+
+
+def vocabulary_completeness(con):
+    """Is the visual vocabulary complete for the nodes localisation actually uses?
+
+    Two things are deliberately NOT treated as defects:
+
+      * negative Feature.word_id values. RTAB-Map indexes at most
+        Kp/MaxFeatures (default 500) words per node; features beyond that cap
+        keep a per-signature local negative id and are never written to Word.
+        In this reference that is 452 distinct ids across 9504 feature rows in
+        51 nodes, and every one of the 51 has exactly 500 positive ids and
+        exactly total-500 negative ones. They are surplus features, not gaps,
+        and counting them as missing makes the condition unsatisfiable for any
+        map whose nodes exceed the cap.
+      * positive ids referenced only by nodes outside the pose graph. Those
+        nodes are never loaded into working memory.
+
+    What IS a defect: a positive word id referenced by a pose-graph node with
+    no row in Word. Those are indexed words that should be in the dictionary
+    and are not.
+    """
+    q = lambda s: con.execute(s).fetchone()[0]
+    graph = POSE_GRAPH_NODES_SQL
+    return dict(
+        word_rows=q("SELECT COUNT(*) FROM Word"),
+        pose_graph_nodes=q(f"SELECT COUNT(*) FROM ({graph})"),
+        distinct_positive_feature_word_ids=q(
+            "SELECT COUNT(DISTINCT word_id) FROM Feature WHERE word_id > 0"),
+        negative_feature_word_ids=q(
+            "SELECT COUNT(DISTINCT word_id) FROM Feature WHERE word_id < 0"),
+        negative_feature_rows=q("SELECT COUNT(*) FROM Feature WHERE word_id < 0"),
+        missing_positive_word_ids_in_pose_graph=q(f"""
+            SELECT COUNT(DISTINCT f.word_id)
+            FROM Feature f
+            JOIN ({graph}) g ON g.node_id = f.node_id
+            LEFT JOIN Word w ON w.id = f.word_id
+            WHERE f.word_id > 0 AND w.id IS NULL"""),
+    )
+
+
 # ------------------------------------------------------- 1-6, 21  reference
 def check_reference(c):
     try:
@@ -168,31 +224,11 @@ def check_reference(c):
         con = sqlite3.connect(f"file:{canonical}?mode=ro", uri=True)
         try:
             integrity = con.execute("PRAGMA integrity_check;").fetchone()[0]
-            words = con.execute("SELECT COUNT(*) FROM Word;").fetchone()[0]
             feats = con.execute("SELECT COUNT(*) FROM Feature;").fetchone()[0]
             nodes = con.execute("SELECT COUNT(*) FROM Node;").fetchone()[0]
             l0 = con.execute("SELECT COUNT(*) FROM Link WHERE type=0;").fetchone()[0]
             l1 = con.execute("SELECT COUNT(*) FROM Link WHERE type=1;").fetchone()[0]
-            # Counting Word rows is not enough. A database can hold thousands
-            # of words and still be missing most of the dictionary entries its
-            # own features refer to - which is what the Stage 2.4 reference
-            # turned out to be (5159 rows, 56382 referenced, 51223 missing).
-            # RTAB-Map masks it by rebuilding the dictionary at load time and
-            # only warning, so nothing downstream notices unless this is
-            # measured directly.
-            distinct_fw = con.execute(
-                "SELECT COUNT(DISTINCT word_id) FROM Feature;").fetchone()[0]
-            missing_fw = con.execute(
-                "SELECT COUNT(DISTINCT f.word_id) FROM Feature f "
-                "LEFT JOIN Word w ON w.id = f.word_id WHERE w.id IS NULL;").fetchone()[0]
-            # Which nodes those missing ids belong to decides whether they can
-            # affect localisation: only nodes in the optimised pose graph are
-            # loaded into working memory and matched against.
-            missing_in_graph = con.execute(
-                "SELECT COUNT(DISTINCT f.word_id) FROM Feature f "
-                "LEFT JOIN Word w ON w.id = f.word_id WHERE w.id IS NULL AND EXISTS "
-                "(SELECT 1 FROM Link l WHERE l.type=0 AND "
-                "(l.from_id=f.node_id OR l.to_id=f.node_id));").fetchone()[0]
+            voc = vocabulary_completeness(con)
         finally:
             con.close()
     except sqlite3.DatabaseError as exc:
@@ -206,19 +242,23 @@ def check_reference(c):
 
     c.ok(4, integrity) if integrity == "ok" else c.bad(4, integrity)
 
-    detail = (f"word_rows={words} distinct_feature_word_ids={distinct_fw} "
-              f"missing_feature_word_ids={missing_fw} "
-              f"(of which {missing_in_graph} belong to pose-graph nodes)")
-    if words == 0 or feats == 0:
+    detail = (f"word_rows={voc['word_rows']} "
+              f"distinct_positive_feature_word_ids={voc['distinct_positive_feature_word_ids']} "
+              f"missing_positive_word_ids_in_pose_graph="
+              f"{voc['missing_positive_word_ids_in_pose_graph']} "
+              f"negative_feature_word_ids={voc['negative_feature_word_ids']} "
+              f"negative_feature_rows={voc['negative_feature_rows']} "
+              f"pose_graph_nodes={voc['pose_graph_nodes']}")
+    if voc['word_rows'] == 0 or feats == 0:
         c.bad(5, f"{detail} - RTAB-Map cannot relocalise at all")
-    elif words != ref['vocabulary_words'] or feats != ref['visual_features']:
+    elif voc['word_rows'] != ref['vocabulary_words'] or feats != ref['visual_features']:
         c.bad(5, f"{detail} - expected word_rows={ref['vocabulary_words']}, "
                  f"features={ref['visual_features']}")
-    elif missing_fw:
-        # Word rows present but the dictionary is incomplete. RTAB-Map will
-        # rebuild what it can at load and carry on, so this fails here rather
-        # than being discovered from a run's results.
-        c.bad(5, f"{detail} - dictionary incomplete")
+    elif voc['missing_positive_word_ids_in_pose_graph']:
+        # Indexed words are missing for nodes that ARE loaded into working
+        # memory. RTAB-Map rebuilds what it can at load time and only warns,
+        # so this fails here rather than being discovered from a run's results.
+        c.bad(5, f"{detail} - dictionary incomplete for pose-graph nodes")
     else:
         c.ok(5, detail)
 
