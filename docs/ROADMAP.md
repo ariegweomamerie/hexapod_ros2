@@ -25,7 +25,7 @@ Verification scripts live in [`verification/`](../verification/README.md), one p
 | Stage | Name | Status |
 |------:|------|--------|
 | 1 | Stable basic gait | ✅ **Passed** 2026-09-29 — 75/75 checks, twice (see Stage 1) |
-| 2 | SLAM | 🔶 **In progress** — 2.1 ✅, 2.2 ✅, 2.3 unblocked 2026-09-30: full ring loop tracks at 0.9%/m, 0 lost frames |
+| 2 | SLAM | ✅ **Passed** 2026-09-30 — 2.1, 2.2, 2.3, 2.4 all verified (Stage 2.4 ring: 25.19 m, 0 lost frames, ATE 0.276 m, 2.13%/m, 137-pose connected graph; see Stage 2.4) |
 | 3 | Localization | ⬜ Not started |
 | 4 | Nav2 | ⬜ Not started |
 | 5 | Navigation tuning | ⬜ Not started |
@@ -323,8 +323,100 @@ drift per metre ranged 0.9% to 2.6%. Open-loop odometry alone is therefore not
 dependable through texture-poor corners, which is what loop closure in Stage 2.4
 exists to fix.
 
-**Next in this stage:** then add `rtabmap`, map a loop, confirm loop
-closure, and check the map against the world's true geometry.
+**Next in this stage:** Stage 2.4 below.
+
+### Stage 2.4 — RTAB-Map SLAM (passed 2026-09-30)
+
+**Goal:** add mapping and loop closure on top of Stage 2.3's odometry, and
+check the result against the world's true geometry.
+
+Validation run: `verification/runs/stage2_vo_stage24_texture_20260930_180046/`
+(bag, database snapshot, console log, and the exact configuration and diff used).
+Implementation committed in `a6275a4`; the world change it depends on in `82301e2`.
+
+Configuration under test, verified on the live nodes before driving:
+
+    Vis/PnPVarianceMedianRatio = 2
+    Odom/ResetCountdown        = 0
+    Vis/MinInliers             = 20
+    RGBD/OptimizeMaxError      = 3.0
+
+#### PASS criterion
+
+Ten conditions, each measured from the recorded bag and database. Re-running
+the same route and re-scoring with `ros2 run hexapod_slam score_bag` reproduces
+every number in the right-hand column.
+
+**The thresholds below are this project's own Stage 2.4 acceptance values, not
+a general SLAM standard.** They were chosen for this robot on this route: a
+hexapod walking a 25.19 m indoor ring with a single RGB-D camera 0.060 m off
+the floor and no wheel odometry, IMU fusion or external reference. They say
+what this stage had to clear in order to move on, and nothing about what any
+other system should achieve. Comparing them against published SLAM benchmarks
+is not meaningful.
+
+| # | Condition | Stage 2.4 acceptance threshold | Measured |
+|---|---|---|---|
+| 1 | Complete the ring route | full 25.19 m | 25.19 m |
+| 2 | Lost RGB or depth frames | 0 | 0 |
+| 3 | Gaps in the camera stream | none over 0.5 s | 0 (worst 0.066 s) |
+| 4 | ATE (RMSE) against ground truth | ≤ 0.50 m | 0.276 m |
+| 5 | Final position error | ≤ 1.00 m | 0.537 m |
+| 6 | Drift per metre | ≤ 3.0 % | 2.13 % |
+| 7 | Final yaw error | ≤ 5.0° | 2.19° |
+| 8 | Pose graph continuous | no step over 0.50 m | 137 poses, largest step 0.216 m |
+| 9 | Driven route in one connected region of the occupancy grid | all poses | 137 of 137 |
+| 10 | Loop closures | ≥ 1 genuine accepted, 0 false accepted | 2 accepted, 0 false |
+
+Condition 9 in full: the grid holds 19,807 known cells, 4,408 occupied and
+15,399 free. The free space forms 112 connected components; the largest is
+35.9 m² of the 38.5 m² total (93.4 %) and contains all 137 pose-graph poses. The
+remaining 2.6 m² is 111 pockets seen through doorways and never entered.
+
+Condition 10 in full: the two accepted closures are nodes 148 and 149 (14.6 m
+and 14.8 m into the ring) back to node 138 (12.75 m) — the robot looking back at
+the north-east corner after turning it. They reduced the pose graph's
+end-to-start gap from the raw odometry's 0.537 m to 0.311 m.
+
+The database also holds 67 further accepted links, all joining nodes recorded
+while the robot stood still before the drive began. They carry no displacement,
+they are not closures observed during motion, and they are **not counted toward
+condition 10** — recorded here only so the 69 links in the database are not
+mistaken for 69 revisit detections.
+
+Of the 76 rejected candidates (55 on inlier count, 21 on graph consistency),
+every one was checked against ground truth by timestamp: all 76 place the robot
+4.6–9.5 m apart facing approximately 180° opposite, so none is a revisit. These are the corridor look-alikes the facility
+was built to contain, and rejecting them is the required behaviour.
+
+#### Return-to-start loop closure is not a Stage 2.4 requirement
+
+The validation route finishes approximately 92° away from its starting heading
+(ground-truth yaw runs 0.000 rad to −1.613 rad). The robot returns to the
+starting *position* but does not reproduce the starting *viewpoint*, so no
+return-to-start match is available to an appearance-based detector. RTAB-Map
+generated zero return-to-start candidates in this run and in the three runs
+before it. This is a property of the route, not of the SLAM configuration, and
+it is therefore excluded from the criterion above.
+
+A revisit-capable route — one that returns the robot to a previously observed
+viewpoint — will be introduced for **Stage 3 localization testing**. The
+validated Stage 2.4 route, run and artefacts stay unchanged, so Stage 2.4
+remains reproducible from the recorded bag.
+
+#### What this stage delivers
+
+`rtabmap.launch.py`, `rtabmap.yaml`, `slam_stack.launch.py` (whole stack in one
+ordered command), an RViz view, and SLAM-pose scoring in the experiment runner.
+TF ownership is split: `rgbd_odometry` owns `odom → base_footprint`, `rtabmap`
+owns `map → odom`.
+
+Getting here required one change to the world: the face camera sits 0.060 m off
+the floor, and at the ring's north-west corner it faced a wall whose kick plate
+gave zero ORB keypoints, which ended three earlier runs at 20.96–21.03 m. A
+single visual-only decal on that wall raised the count to 207–909 with no change
+to any collision geometry. Measurements in
+[KNOWN_ISSUES.md](KNOWN_ISSUES.md) section 2.
 
 ## Stage 3 — Localization
 
@@ -333,6 +425,11 @@ closure, and check the map against the world's true geometry.
 - Verify the estimated pose against Gazebo ground truth.
 - Verify TF relationships (`map → odom → base_footprint`).
 - Localization stays stable while the hexapod walks and turns.
+- Introduce a **revisit-capable route** that returns the robot to a previously
+  observed viewpoint, so return-to-start loop closure can be tested. The Stage
+  2.4 ring finishes ~92° off its starting heading and cannot present that
+  match; the Stage 2.4 route is left unchanged so its validation run stays
+  reproducible.
 
 ## Stage 4 — Nav2
 
