@@ -43,7 +43,10 @@ WS = "/home/general/hexapod_ros_robot_ws"
 WORLD = "hexapod_facility"
 BAG_TOPICS = ["/face_camera/image", "/face_camera/depth_image", "/face_camera/camera_info",
               "/odom", "/odom_ground_truth", "/tf", "/tf_static", "/cmd_vel", "/clock",
-              "/joint_states", "/imu"]
+              "/joint_states", "/imu",
+              # RTAB-Map's output, recorded when it is running; rosbag2 simply
+              # waits for topics that do not exist yet
+              "/map", "/mapData", "/mapGraph", "/mapPath"]
 LOST_COVARIANCE = 9999.0        # rtabmap marks a lost frame with this
 
 
@@ -69,6 +72,13 @@ class Recorder(Node):
                                  lambda m: self.depth_t.append(stamp(m)), q)
         self.create_subscription(CameraInfo, "/face_camera/camera_info",
                                  lambda m: self.info_t.append(stamp(m)), q)
+        # map -> base_footprint is RTAB-Map's corrected pose. It is read from TF
+        # rather than a topic because that transform IS the SLAM output, and it
+        # stays a no-op when RTAB-Map is not running.
+        import tf2_ros
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
+        self.slam = []
         try:                                     # optional: richer tracking detail
             from rtabmap_msgs.msg import OdomInfo
             self.odom_info = []
@@ -88,6 +98,13 @@ class Recorder(Node):
     def _on_gt(self, m):
         p, o = m.pose.pose.position, m.pose.pose.orientation
         self.gt.append((stamp(m), p.x, p.y, p.z, yaw_of(o)))
+        try:                                     # SLAM pose, if RTAB-Map is up
+            import rclpy.time
+            tr = self.tf_buffer.lookup_transform("map", "base_footprint", rclpy.time.Time())
+            t, q = tr.transform.translation, tr.transform.rotation
+            self.slam.append((stamp(m), t.x, t.y, t.z, yaw_of(q)))
+        except Exception:
+            pass
 
 
 class Load:
@@ -385,6 +402,31 @@ def main():
     if node.odom_info:
         print(f"{'features / inliers (mean)':28s} {results['features_mean']:7.0f} / "
               f"{results['inliers_mean']:.0f}   min inliers {results['inliers_min']}")
+    if node.slam:
+        # SLAM poses are already in the map frame, which starts at the robot's
+        # start pose, so they compare against ground truth the same way
+        slam = [x for x in node.slam if x[0] >= times[0]]
+        if len(slam) > 20:
+            s0 = slam[0]
+            c2, s2 = math.cos(-s0[4]), math.sin(-s0[4])
+            slam = [(t, (x - s0[1]) * c2 - (y - s0[2]) * s2,
+                     (x - s0[1]) * s2 + (y - s0[2]) * c2, z - s0[3],
+                     math.atan2(math.sin(yw - s0[4]), math.cos(yw - s0[4])))
+                    for t, x, y, z, yw in slam]
+            gt_s2 = resample(gt, [v[0] for v in slam])
+            serr = np.array([math.hypot(v[1] - g[1], v[2] - g[2]) for v, g in zip(slam, gt_s2)])
+            syaw = abs(math.degrees(math.atan2(math.sin(slam[-1][4] - gt_s2[-1][4]),
+                                               math.cos(slam[-1][4] - gt_s2[-1][4]))))
+            results.update(slam_poses=len(slam), slam_ate_rmse_m=float(np.sqrt((serr**2).mean())),
+                           slam_final_position_error_m=float(serr[-1]),
+                           slam_max_position_error_m=float(serr.max()),
+                           slam_final_yaw_error_deg=float(syaw),
+                           slam_drift_per_metre=float(serr[-1] / gt_path) if gt_path else None)
+            print(f"\n{'SLAM final position error':28s} {serr[-1]:7.3f} m "
+                  f"({100 * serr[-1] / gt_path:.1f}% of distance)")
+            print(f"{'SLAM ATE (RMSE)':28s} {np.sqrt((serr**2).mean()):7.3f} m")
+            print(f"{'SLAM max position error':28s} {serr.max():7.3f} m")
+            print(f"{'SLAM final yaw error':28s} {syaw:7.2f} deg")
     if "rtf_mean" in results:
         print(f"{'real-time factor':28s} {results['rtf_mean']:7.2f} mean, "
               f"{results['rtf_min']:.2f} min")

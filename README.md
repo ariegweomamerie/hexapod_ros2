@@ -152,7 +152,23 @@ sudo apt install -y \
   ros-jazzy-urdfdom-py \
   python3-pykdl \
   python3-pil \
+  python3-opencv \
   python3-colcon-common-extensions
+```
+
+**Stage 2 (SLAM) additionally needs RTAB-Map**, the RGB-D SLAM library the robot
+maps with:
+
+```bash
+sudo apt install -y \
+  ros-jazzy-rtabmap \
+  ros-jazzy-rtabmap-odom \
+  ros-jazzy-rtabmap-slam \
+  ros-jazzy-rtabmap-msgs \
+  ros-jazzy-rtabmap-sync \
+  ros-jazzy-rtabmap-util \
+  ros-jazzy-rtabmap-conversions \
+  ros-jazzy-rosbag2-storage-mcap
 ```
 
 What each piece does (so it's not a mystery):
@@ -164,7 +180,12 @@ What each piece does (so it's not a mystery):
 | `xacro` / `urdfdom-py` | Read and process the robot's 3D model files |
 | `python3-pykdl` | Math for the legs (inverse kinematics) |
 | `python3-pil` | Saves frames for the demo GIF recorder |
+| `python3-opencv` | Counts image features when checking what the camera can see |
 | `colcon-common-extensions` | The tool that builds the project |
+| `rtabmap-odom` | RGB-D visual odometry — works out how far the robot moved from the camera alone |
+| `rtabmap-slam` | Builds and optimises the map, and recognises places it has been before |
+| `rtabmap-msgs` / `-sync` / `-util` / `-conversions` | Message types and helpers RTAB-Map needs |
+| `rosbag2-storage-mcap` | Records every experiment so runs can be re-scored later |
 
 ---
 

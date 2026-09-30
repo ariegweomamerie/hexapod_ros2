@@ -1,0 +1,38 @@
+# RTAB-Map SLAM on top of the validated Stage 2.3 RGB-D odometry.
+#
+# Stage 2.4 asks one question: can loop closure hold the trajectory together
+# where open-loop odometry drifts (0.9-2.6% per metre over three ring loops) and
+# occasionally loses tracking for a second at a texture-poor corner? So this is
+# deliberately close to RTAB-Map's defaults - the same discipline as Stage 2.3.
+# Nothing here changes the camera, the odometry or their parameters.
+rtabmap:
+  ros__parameters:
+    use_sim_time: true
+
+    # frames ------------------------------------------------------------------
+    frame_id: base_footprint          # the body RTAB-Map localises
+    map_frame_id: map
+    odom_frame_id: ""                 # empty: take odometry from the /odom TOPIC,
+                                      # so its covariance weights each graph link
+    publish_tf: true                  # RTAB-Map owns map -> odom, and only that;
+                                      # odom -> base_footprint stays with the odometry
+    wait_for_transform: 0.2
+
+    # input -------------------------------------------------------------------
+    subscribe_depth: true
+    subscribe_rgbd: false
+    subscribe_scan: false             # this robot has no lidar, by design
+    subscribe_scan_cloud: false
+    approx_sync: false                # colour and depth share an exact stamp
+    sync_queue_size: 10           # renamed from queue_size in this RTAB-Map version
+
+    # what RTAB-Map should do ---------------------------------------------------
+    Mem/IncrementalMemory: "true"     # mapping, not localisation-only
+    Rtabmap/DetectionRate: "1.0"      # one map node per second of exploration
+    RGBD/ProximityBySpace: "true"     # close loops by revisiting a place
+    RGBD/AngularUpdate: "0.05"        # add a node after 0.05 rad of rotation
+    RGBD/LinearUpdate: "0.05"         # or 0.05 m of travel
+    Reg/Force3DoF: "true"             # the robot walks on a flat floor
+    Optimizer/Slam2D: "true"
+    Grid/FromDepth: "true"            # occupancy grid from the depth camera
+    Grid/RangeMax: "5.0"              # trust depth out to 5 m for the grid

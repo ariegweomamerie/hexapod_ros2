@@ -11,6 +11,7 @@
   <exec_depend>Hexapod_Robot_description</exec_depend>
   <exec_depend>python3-pil</exec_depend>
   <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-opencv</exec_depend>
 
   <test_depend>python3-pytest</test_depend>
 

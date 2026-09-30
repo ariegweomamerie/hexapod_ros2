@@ -27,8 +27,23 @@ rgbd_odometry:
                                       # silently repeating the last good pose
     # odometry ----------------------------------------------------------------
     Odom/Strategy: "0"                # 0 = frame-to-map (RTAB-Map default)
-    Odom/ResetCountdown: "0"          # do not auto-reset: we want to SEE a failure
+    # Back to 0 (RTAB-Map's default). 1 was tried on 2026-09-30 and did let the
+    # robot finish the ring, but an automatic reset silently redefines the odom
+    # frame without telling RTAB-Map, so the SLAM pose came out 179.95 deg wrong
+    # (docs/KNOWN_ISSUES.md). 0 keeps a tracking failure visible instead of
+    # papering over it, which is what we need while the cause is being removed.
+    Odom/ResetCountdown: "0"
     Odom/GuessMotion: "true"          # constant-velocity guess from its own history
     Vis/EstimationType: "1"           # 1 = PnP (3D-to-2D), the RGB-D default
     Vis/MaxFeatures: "1000"
     Vis/MinInliers: "20"
+    # Covariance experiment (2026-09-30). RTAB-Map computes the variance it
+    # publishes on /odom from the spread of the 3D inlier correspondences,
+    # divided down by this ratio - "the higher it is, the smaller the covariance
+    # will be. With accurate depth estimation, this could be set to 2. For depth
+    # estimated by stereo, 4 or more maybe used". Our depth is rendered geometry,
+    # not stereo, so 2 is the documented value for this sensor; the default 4 made
+    # the odometry claim 5.2 mm precision while it actually drifted 4.9% per
+    # metre, and RTAB-Map then rejected every genuine loop closure as impossible
+    # (docs/KNOWN_ISSUES.md). This is the only parameter changed.
+    Vis/PnPVarianceMedianRatio: "2"

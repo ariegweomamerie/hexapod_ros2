@@ -1,0 +1,242 @@
+# Stage 2.4 SLAM view.
+#
+# Fixed frame is map, so the whole chain map -> odom -> base_footprint -> robot
+# -> face_camera_optical_frame is on screen and any break in it is obvious.
+# Two saved viewpoints: "Chase" rides with the robot, "Map overview" looks
+# straight down at the map being built. Switch them in the Views panel.
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+    Property Tree Widget:
+      Expanded:
+        - /SLAM map1
+        - /Visual odometry1
+      Splitter Ratio: 0.55
+    Tree Height: 620
+  - Class: rviz_common/Views
+    Name: Views
+    Expanded:
+      - /Current View1
+Visualization Manager:
+  Class: ""
+  Name: root
+  Global Options:
+    Background Color: 32; 34; 38
+    Fixed Frame: map
+    Frame Rate: 30
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Cell Size: 1
+      Plane Cell Count: 24
+      Color: 90; 92; 96
+      Alpha: 0.35
+      Line Style:
+        Value: Lines
+      Reference Frame: <Fixed Frame>
+    - Class: rviz_default_plugins/Map
+      Name: SLAM map
+      Enabled: true
+      Topic:
+        Value: /map
+        Depth: 1
+        Durability Policy: Transient Local
+        Reliability Policy: Reliable
+      Alpha: 0.9
+      Color Scheme: map
+      Draw Behind: true
+      Update Topic:
+        Value: /map_updates
+        Depth: 10
+        Durability Policy: Volatile
+        Reliability Policy: Reliable
+    - Class: rviz_default_plugins/RobotModel
+      Name: RobotModel
+      Enabled: true
+      Description Topic:
+        Value: /robot_description
+        Depth: 1
+        Durability Policy: Transient Local
+        Reliability Policy: Reliable
+      Alpha: 1
+      Visual Enabled: true
+      Collision Enabled: false
+    - Class: rviz_default_plugins/Path
+      Name: SLAM trajectory
+      Enabled: true
+      Topic:
+        Value: /mapPath
+        Depth: 1
+        Durability Policy: Volatile
+        Reliability Policy: Reliable
+      Color: 40; 200; 110
+      Line Style: Lines
+      Alpha: 1
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0.01
+    - Class: rviz_default_plugins/Odometry
+      Name: Visual odometry
+      Enabled: true
+      Topic:
+        # deep queue: odometry arrives at ~14 Hz and RViz logs a drop whenever
+        # its TF filter queue fills while waiting for a transform
+        Value: /odom
+        Depth: 500
+        Durability Policy: Volatile
+        Reliability Policy: Reliable
+      Keep: 200
+      Position Tolerance: 0.08
+      Angle Tolerance: 0.08
+      Covariance:
+        Value: false
+      Shape:
+        Value: Arrow
+        Alpha: 0.9
+        Color: 70; 130; 220
+        Head Length: 0.04
+        Head Radius: 0.025
+        Shaft Length: 0.08
+        Shaft Radius: 0.008
+    - Class: rviz_default_plugins/PointCloud2
+      # RTAB-Map's filtered obstacle cloud for the current view: ~2k points and
+      # never any inf, unlike the raw camera cloud further down
+      Name: Obstacle cloud
+      Enabled: true
+      Topic:
+        Value: /local_grid_obstacle
+        Depth: 2
+        Durability Policy: Volatile
+        Reliability Policy: Reliable
+      Size (m): 0.025
+      Style: Flat Squares
+      Decay Time: 0
+      Color Transformer: FlatColor
+      Color: 235; 120; 60
+      Alpha: 1
+    - Class: rviz_default_plugins/PointCloud2
+      # the assembled map cloud, filling in as the robot explores
+      Name: Map cloud
+      Enabled: true
+      Topic:
+        Value: /cloud_map
+        Depth: 1
+        Durability Policy: Volatile
+        Reliability Policy: Reliable
+      Size (m): 0.02
+      Style: Flat Squares
+      Decay Time: 0
+      Color Transformer: AxisColor
+      Axis: Z
+      Alpha: 0.85
+    - Class: rviz_default_plugins/PointCloud2
+      # The raw organised camera cloud: 307k points of which ~4% are inf for
+      # pixels past the 12 m clip. RViz marks any cloud containing inf as an
+      # error even while drawing the finite ones, and it is heavy, so it stays
+      # off. The two clouds above show the same geometry, filtered and cheaper.
+      Name: Raw camera cloud (flags inf)
+      Enabled: false
+      Topic:
+        Value: /face_camera/points
+        Depth: 2
+        Durability Policy: Volatile
+        Reliability Policy: Best Effort
+      Size (m): 0.01
+      Style: Points
+      Decay Time: 0
+      Color Transformer: AxisColor
+      Axis: Z
+    - Class: rviz_default_plugins/TF
+      Name: TF
+      Enabled: false
+      Marker Scale: 0.25
+      Show Arrows: false
+      Show Axes: true
+      Show Names: false
+      Update Interval: 0
+      Frame Timeout: 15
+      Filter (blacklist): ""
+      Filter (whitelist): ""
+    - Class: rviz_default_plugins/Image
+      Name: Head camera
+      Enabled: true
+      Topic:
+        Value: /face_camera/image
+        Depth: 2
+        Durability Policy: Volatile
+        Reliability Policy: Best Effort
+      Max Value: 1
+      Min Value: 0
+      Normalize Range: true
+  Tools:
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/FocusCamera
+    - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/Measure
+      Line color: 128; 128; 0
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Name: Chase
+      Distance: 3.2
+      Pitch: 0.42
+      Yaw: 1.62
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: 0.1
+      Focal Shape Fixed Size: false
+      Focal Shape Size: 0.05
+      Target Frame: base_footprint
+      Near Clip Distance: 0.05
+      Value: Orbit (rviz)
+    Saved:
+      - Class: rviz_default_plugins/Orbit
+        Name: Chase
+        Distance: 3.2
+        Pitch: 0.42
+        Yaw: 1.62
+        Focal Point:
+          X: 0
+          Y: 0
+          Z: 0.1
+        Target Frame: base_footprint
+        Near Clip Distance: 0.05
+        Value: Orbit (rviz)
+      - Class: rviz_default_plugins/Orbit
+        Name: Map overview
+        Distance: 16
+        Pitch: 1.5697
+        Yaw: 3.1416
+        Focal Point:
+          X: 7.0
+          Y: 5.5
+          Z: 0
+        Target Frame: map
+        Near Clip Distance: 0.05
+        Value: Orbit (rviz)
+      - Class: rviz_default_plugins/Orbit
+        Name: Close follow
+        Distance: 1.4
+        Pitch: 0.25
+        Yaw: 1.62
+        Focal Point:
+          X: 0
+          Y: 0
+          Z: 0.12
+        Target Frame: base_footprint
+        Near Clip Distance: 0.02
+        Value: Orbit (rviz)
+Window Geometry:
+  Displays:
+    collapsed: false
+  Head camera:
+    collapsed: false
+  Views:
+    collapsed: false
+  Height: 1000
+  Width: 1700
+  Hide Left Dock: false
+  Hide Right Dock: false
