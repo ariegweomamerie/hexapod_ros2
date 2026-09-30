@@ -25,7 +25,7 @@ Verification scripts live in [`verification/`](../verification/README.md), one p
 | Stage | Name | Status |
 |------:|------|--------|
 | 1 | Stable basic gait | ✅ **Passed** 2026-09-29 — 75/75 checks, twice (see Stage 1) |
-| 2 | SLAM | 🔶 **In progress** — 2.1 RGB-D camera ✅, 2.2 camera TF ✅; next: visual odometry |
+| 2 | SLAM | 🔶 **In progress** — 2.1 ✅, 2.2 ✅, 2.3 unblocked 2026-09-30: full ring loop tracks at 0.9%/m, 0 lost frames |
 | 3 | Localization | ⬜ Not started |
 | 4 | Nav2 | ⬜ Not started |
 | 5 | Navigation tuning | ⬜ Not started |
@@ -231,7 +231,7 @@ the colour image.
 | Colour | `/face_camera/image` | `sensor_msgs/Image` | 640×480 `rgb8`, 15 Hz |
 | Depth | `/face_camera/depth_image` | `sensor_msgs/Image` | 640×480 `32FC1` (metres), 15 Hz, 0.29–8.9 m observed, 0.1–12 m clip |
 | Intrinsics | `/face_camera/camera_info` | `sensor_msgs/CameraInfo` | fx = fy = 337.36, cx 320, cy 240, 87.0° × 70.9° FOV |
-| Point cloud | `/face_camera/points` | `sensor_msgs/PointCloud2` | organised 640×480, `xyz` + `rgb`, 15 Hz, straight from the sensor |
+| Point cloud | `/face_camera/points` | `sensor_msgs/PointCloud2` | organised 640×480, `xyz` + greyscale intensity, 15 Hz, straight from the sensor |
 
 Colour and depth share a stamp exactly (107/107 frames, worst offset 0.000 ms), which
 is what RGB-D odometry needs.
@@ -274,10 +274,57 @@ runs at 0.99; the remaining gap is rendering.
 unit tests 31/31 (gait 12, head 11, worlds 8); the robot walks 9.5 cm/s in the
 facility with the sensor mounted.
 
-**Next in this stage:** bring up `rgbd_odometry` alone
- and measure it against ground truth while
-walking, then add `rtabmap`, map a loop, confirm loop closure, and check the map
-against the world's true geometry. `ros2 bag` records each run.
+### Stage 2.3 — RGB-D visual odometry (blocked 2026-09-30)
+
+`rtabmap_odom/rgbd_odometry` is up and healthy: 14.9 Hz, ~35 ms per frame, ~450
+features / 211 inliers, 0.0 mm drift standing still for 20 s, and it owns
+`odom → base_footprint` with ground truth kept entirely out of the pipeline.
+`hexapod_slam` provides the launch, the experiment runner, an offline bag scorer
+and the run-reset helper.
+
+**Run A (ring loop) is the only experiment that could be completed.** The
+odometry tracked **8.26 m of the 25.19 m ring at 1.2% drift per metre**
+(ATE 0.058 m, final error 0.102 m, max yaw error 4.15°) and then lost tracking at
+the first corner and never recovered.
+
+**Resolved 2026-09-30 by moving the camera 60 mm forward** (it sat 38.4 mm inside
+the face shell, and a depth camera whose origin is inside its own model's mesh
+renders nothing off-axis). The ring loop now tracks end to end: 25.19 m, 0 lost
+frames, 0.9% drift per metre, final error 0.231 m, final yaw error 0.05 deg.
+
+**The underlying blocker was in the simulator, not in our code.** The head depth camera
+returns 100% infinite depth whenever the robot's heading is more than ~15° away
+from a world axis, so every corner blanks it. Colour is unaffected. Six controlled
+experiments have narrowed it down — see [KNOWN_ISSUES.md](KNOWN_ISSUES.md):
+
+| Experiment | Result |
+|---|---|
+| Un-lump the camera link (Fix 1) | no change |
+| Split `rgbd_camera` into `camera` + `depth_camera` (Fix 2) | colour fixed, depth still fails |
+| `ogre` render engine instead of `ogre2` (Fix 3) | worse: depth fails at *every* heading |
+| Robot completely static (joint drift 1e-18 rad) | fails identically, so motion is not the trigger |
+| Depth sensor moved to `base_link`, pose preserved to 5e-10 m | fails identically, so the head chain is not the trigger |
+| Same sensor in a standalone model | works at every heading |
+| Minimal one-link **dynamic** model with the same sensor | works at every heading, so a dynamic model is not the trigger |
+| That minimal model + one hexapod STL visual | works at every heading, so mesh visuals are not the trigger |
+| Same model + the STL as a collision too | works at every heading, so mesh collisions are not the trigger |
+| 20-link model of plain boxes, 19 fixed joints | works at every heading, so link count/structure is not the trigger |
+| **21 links each carrying its real STL, no ROS software at all** | **fails at the same 9 headings as the robot - reproduction case found** |
+| **That same model with the camera moved 0.34 m clear of its own meshes** | **works at every heading - the trigger is a camera embedded in the model's own mesh geometry** |
+| **Real robot: camera moved 60 mm forward, out of `face_link_1`** | **fixed - 17/17 headings, and the full 25.19 m ring loop now tracks with 0 lost frames** |
+
+**Repeatability (Runs B and C, 2026-09-30).** Two further ring loops on the
+frozen configuration, nothing changed between them. Depth stayed valid in every
+frame of both, at every heading - the rendering defect is gone. Run B tracked the
+full 25.19 m with 0 lost frames at 2.6% drift per metre; Run C tracked 20.94 m
+and then lost visual tracking at the north-west corner, 0.68 m from a
+featureless block wall, with depth still 100% valid. Across the three good runs
+drift per metre ranged 0.9% to 2.6%. Open-loop odometry alone is therefore not
+dependable through texture-poor corners, which is what loop closure in Stage 2.4
+exists to fix.
+
+**Next in this stage:** then add `rtabmap`, map a loop, confirm loop
+closure, and check the map against the world's true geometry.
 
 ## Stage 3 — Localization
 

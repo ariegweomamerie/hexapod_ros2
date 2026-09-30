@@ -1,0 +1,34 @@
+# RGB-D visual odometry (rtabmap_odom/rgbd_odometry) for the hexapod.
+#
+# Stage 2.3 is a characterisation stage, so this is deliberately close to
+# RTAB-Map's defaults: we want to measure what the camera and the walking robot
+# actually give us, not what a tuned configuration can be coaxed into.
+#
+# Ground truth is NOT connected here in any form. No guess_frame_id, no external
+# odometry topic, no initial pose from the simulator: the only inputs are the
+# colour image, the depth image and the camera intrinsics.
+rgbd_odometry:
+  ros__parameters:
+    use_sim_time: true
+
+    # frames ------------------------------------------------------------------
+    frame_id: base_footprint          # the body this odometry describes
+    odom_frame_id: odom               # visual odometry owns odom -> base_footprint
+    publish_tf: true
+    wait_for_transform: 0.2           # s, for base_footprint -> camera optical frame
+
+    # input -------------------------------------------------------------------
+    subscribe_rgbd: false             # separate colour/depth/info topics
+    approx_sync: false                # colour and depth share an exact stamp
+    queue_size: 10
+
+    # what to publish ---------------------------------------------------------
+    publish_null_when_lost: true      # a null odom marks lost tracking instead of
+                                      # silently repeating the last good pose
+    # odometry ----------------------------------------------------------------
+    Odom/Strategy: "0"                # 0 = frame-to-map (RTAB-Map default)
+    Odom/ResetCountdown: "0"          # do not auto-reset: we want to SEE a failure
+    Odom/GuessMotion: "true"          # constant-velocity guess from its own history
+    Vis/EstimationType: "1"           # 1 = PnP (3D-to-2D), the RGB-D default
+    Vis/MaxFeatures: "1000"
+    Vis/MinInliers: "20"

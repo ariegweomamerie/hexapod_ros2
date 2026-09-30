@@ -27,10 +27,22 @@ def generate_launch_description():
     # spawn pose, so a world can place the robot at its own start point
     declare_pose = [DeclareLaunchArgument(n, default_value=v) for n, v in
                     (('x', '0.0'), ('y', '0.0'), ('z', '0.32'), ('yaw', '0.0'))]
+    # render_engine_server:= the gz-rendering plugin the SERVER uses for sensor
+    # rendering ('ogre2' default, 'ogre' for the older engine). Left empty the
+    # command line is unchanged, so this argument cannot alter normal runs. It
+    # exists to test the depth-camera rendering defect in docs/KNOWN_ISSUES.md
+    # against the other engine while the GUI keeps its own.
+    render_engine_server = LaunchConfiguration('render_engine_server')
+    declare_engine = DeclareLaunchArgument('render_engine_server', default_value='')
+    engine_arg = PythonExpression(
+        ["'' if '", render_engine_server, "' == '' else ' --render-engine-server ' + '",
+         render_engine_server, "'"]
+    )
     gz_args = PythonExpression(
         ["'-s -r -v 4 ' + '", world, "' if '", headless, "' == 'true' else '-r -v 4 ' + '",
          world, "'"]
     )
+    gz_args = PythonExpression(["'", gz_args, "' + '", engine_arg, "'"])
 
     robot_description_file = os.path.join(pkg_ros_gz_rbot, 'urdf', 'Hexapod_Robot.xacro')
     ros_gz_bridge_config = os.path.join(pkg_ros_gz_rbot, 'config', 'ros_gz_bridge_gazebo.yaml')
@@ -113,6 +125,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         declare_headless,
+        declare_engine,
         declare_world,
         *declare_pose,
         gazebo,

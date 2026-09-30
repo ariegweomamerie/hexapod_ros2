@@ -164,28 +164,54 @@
   <self_collide>true</self_collide>
 </gazebo>
 
-<!-- RGB-D camera on the head, for visual SLAM. Gazebo's native rgbd_camera
-     renders colour AND depth from the same optics, so depth is real geometry,
-     not something derived from the colour image. One sensor publishes:
-       face_camera/image        colour
-       face_camera/depth_image  depth, 32-bit float metres
-       face_camera/points       organised point cloud
-       face_camera/camera_info  intrinsics shared by both streams
-     It is mounted on face_camera_link (pose comes from the URDF joint) and its
-     data is stamped with face_camera_optical_frame, the REP-145 optical frame.
-     15 Hz is plenty for RGB-D SLAM and leaves rendering budget; 87 deg matches
-     the class of depth camera this robot would carry. -->
+<!-- RGB-D camera on the head, for visual SLAM. Depth is rendered geometry, not
+     something derived from the colour image. Colour and depth are two separate
+     sensors sharing one mounting link, one set of optics and one 15 Hz rate,
+     and both stamp their data with face_camera_optical_frame, the REP-145
+     optical frame. The ROS-facing interface is:
+       /face_camera/image        colour, 640x480 rgb8
+       /face_camera/depth_image  depth, 640x480 32FC1 metres, 0.10-12 m
+       /face_camera/camera_info  intrinsics, from the colour sensor alone
+       /face_camera/points       organised cloud, xyz + greyscale intensity
+     Two sensors rather than one rgbd_camera because the combined sensor's depth
+     and colour failed together under the rendering defect in
+     docs/KNOWN_ISSUES.md; split, colour is unaffected. 15 Hz is plenty for RGB-D
+     SLAM and leaves rendering budget; 87 deg matches the class of depth camera
+     this robot would carry. -->
 <gazebo reference="face_camera_link">
-  <sensor name="face_camera" type="rgbd_camera">
+  <!-- The colour sensor also owns /face_camera/camera_info: Gazebo derives a
+       sensor's camera_info topic from its image topic, and these are the
+       intrinsics both streams share. -->
+  <sensor name="face_camera_rgb" type="camera">
     <always_on>1</always_on>
     <update_rate>15</update_rate>
-    <topic>face_camera</topic>
+    <topic>face_camera/image</topic>
     <gz_frame_id>face_camera_optical_frame</gz_frame_id>
     <camera>
       <horizontal_fov>1.518</horizontal_fov>
       <image><width>640</width><height>480</height><format>R8G8B8</format></image>
       <clip><near>0.10</near><far>12.0</far></clip>
-      <depth_camera><clip><near>0.10</near><far>12.0</far></clip></depth_camera>
+      <optical_frame_id>face_camera_optical_frame</optical_frame_id>
+    </camera>
+  </sensor>
+  <sensor name="face_camera_depth" type="depth_camera">
+    <always_on>1</always_on>
+    <update_rate>15</update_rate>
+    <!-- Its own Gazebo namespace on purpose. Gazebo derives a sensor's
+         camera_info topic from its image topic by replacing the last component,
+         so a depth topic of face_camera/depth_image would resolve to
+         face_camera/camera_info and publish the intrinsics a second time on top
+         of the colour sensor's. (camera_info_topic does not help: the plain
+         camera honours it, DepthCameraSensor does not.) Under this namespace
+         the depth sensor owns /face_camera_depth/camera_info instead, and the
+         ros_gz bridge maps its image and cloud back onto the unchanged ROS
+         names /face_camera/depth_image and /face_camera/points. -->
+    <topic>face_camera_depth/image</topic>
+    <gz_frame_id>face_camera_optical_frame</gz_frame_id>
+    <camera>
+      <horizontal_fov>1.518</horizontal_fov>
+      <image><width>640</width><height>480</height><format>R_FLOAT32</format></image>
+      <clip><near>0.10</near><far>12.0</far></clip>
       <optical_frame_id>face_camera_optical_frame</optical_frame_id>
     </camera>
   </sensor>

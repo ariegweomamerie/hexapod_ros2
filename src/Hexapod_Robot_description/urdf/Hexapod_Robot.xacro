@@ -643,12 +643,37 @@
      y down, z forward, i.e. the optical convention every ROS vision node expects.
      Both hang off face_link_1, so pan and tilt carry the camera with them.
      ========================================================================== -->
-<link name="face_camera_link"/>
+<!-- The camera link carries a token inertial and the joint is kept out of
+     sdformat's fixed-joint lumping, so face_camera_link survives into the SDF
+     as a real link instead of the sensor being welded onto face_link_1. A
+     lumped sensor rendered an empty scene at any heading more than ~10 deg off
+     a world axis (docs/KNOWN_ISSUES.md). The mass is 1 g with 1e-7 kg m^2
+     inertia: real enough for the physics engine, small enough to leave the
+     robot's dynamics and the Stage 1 gait results untouched. The pose below is
+     unchanged. -->
+<link name="face_camera_link">
+  <inertial>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <mass value="0.001"/>
+    <inertia ixx="1e-7" ixy="0.0" ixz="0.0" iyy="1e-7" iyz="0.0" izz="1e-7"/>
+  </inertial>
+</link>
 <joint name="face_camera_joint" type="fixed">
-  <origin xyz="0.032470 -0.042942 0.035805" rpy="-0.000309 -0.362146 -1.599897"/>
+  <!-- The lens sits 60 mm ahead of where the CAD places it, along its own view
+       axis, which puts it 21.6 mm clear of the face shell instead of 38.4 mm
+       inside it. A depth camera whose origin lies within its own model's mesh
+       renders an empty scene at any heading off a world axis, which blocked
+       visual odometry until this was found; docs/KNOWN_ISSUES.md has the
+       bisection. Orientation is unchanged, and the CAD origin was
+       xyz="0.032470 -0.042942 0.035805". -->
+  <origin xyz="0.030837 -0.099027 0.057062" rpy="-0.000309 -0.362146 -1.599897"/>
   <parent link="face_link_1"/>
   <child link="face_camera_link"/>
 </joint>
+<gazebo reference="face_camera_joint">
+  <disableFixedJointLumping>true</disableFixedJointLumping>
+  <preserveFixedJoint>true</preserveFixedJoint>
+</gazebo>
 
 <link name="face_camera_optical_frame"/>
 <joint name="face_camera_optical_joint" type="fixed">

@@ -26,3 +26,6 @@ verification/runs/
 # Generated docs images from world inspection runs (regenerate with the tools)
 src/hexapod_worlds/docs/facility_views.png
 src/hexapod_worlds/docs/facility_clearance.png
+
+# pytest
+.pytest_cache/

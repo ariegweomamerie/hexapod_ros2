@@ -36,14 +36,21 @@
 
 # Depth image: 32-bit float metres, same optics and stamp as the colour frame.
 - ros_topic_name: "/face_camera/depth_image"
-  gz_topic_name: "/face_camera/depth_image"
+  gz_topic_name: "/face_camera_depth/image"
   ros_type_name: "sensor_msgs/msg/Image"
   gz_type_name: "gz.msgs.Image"
   direction: GZ_TO_ROS
 
 # Organised point cloud straight from the sensor - no extra processing node.
+# The depth sensor lives in its own Gazebo namespace (see the .gazebo file), so
+# its cloud is /face_camera_depth/image/points there; the ROS name is unchanged.
+# It carries xyz plus an rgb field, but that rgb is the depth sensor's own
+# greyscale intensity (r = g = b), not the colour camera's image: with colour and
+# depth as separate sensors nothing joins them. The old combined rgbd_camera gave
+# true colour here. Nothing in Stage 2.3 consumes the cloud - rgbd_odometry takes
+# the image, depth and camera_info topics - so this is recorded, not worked around.
 - ros_topic_name: "/face_camera/points"
-  gz_topic_name: "/face_camera/points"
+  gz_topic_name: "/face_camera_depth/image/points"
   ros_type_name: "sensor_msgs/msg/PointCloud2"
   gz_type_name: "gz.msgs.PointCloudPacked"
   direction: GZ_TO_ROS

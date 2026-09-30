@@ -23,6 +23,9 @@ def generate_launch_description():
 
     return LaunchDescription([
         DeclareLaunchArgument('headless', default_value='false'),
+        # passed straight through to gazebo.launch.py; empty means "leave the
+        # command line alone", so normal runs are unaffected
+        DeclareLaunchArgument('render_engine_server', default_value=''),
         # let Gazebo find model://pillar, model://slam_assets/... and friends
         AppendEnvironmentVariable('GZ_SIM_RESOURCE_PATH', os.path.join(worlds_share, 'models')),
         IncludeLaunchDescription(
@@ -31,6 +34,7 @@ def generate_launch_description():
             launch_arguments={
                 'world': world,
                 'headless': LaunchConfiguration('headless'),
+                'render_engine_server': LaunchConfiguration('render_engine_server'),
                 'x': str(START['x']),
                 'y': str(START['y']),
                 'z': '0.32',
