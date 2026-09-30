@@ -58,10 +58,14 @@ class Truth:
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--loop", choices=["ring", "core", "rooms"], default="core")
+    ap.add_argument("--loop", choices=["ring", "core", "rooms", "localization"],
+                    default="core")
     ap.add_argument("--timeout", type=float, default=900.0, help="s of wall clock")
+    ap.add_argument("--final-dwell", type=float, default=0.0,
+                    help="s to stand still at the last waypoint before finishing")
     args = ap.parse_args()
-    waypoints = {"ring": L.loop_ring(), "core": L.loop_core(), "rooms": L.loop_rooms()}[args.loop]
+    waypoints = {"ring": L.loop_ring(), "core": L.loop_core(), "rooms": L.loop_rooms(),
+                 "localization": L.loop_localization()}[args.loop]
 
     rclpy.init()
     node = rclpy.create_node("drive_facility_loop")
@@ -76,10 +80,18 @@ def main():
 
     # Join the loop at the nearest waypoint: this follower drives straight at its
     # target, so starting mid-world could otherwise aim it through a wall.
-    ring = waypoints[:-1] if waypoints[0] == waypoints[-1] else waypoints
+    closed = waypoints[0] == waypoints[-1]
+    ring = waypoints[:-1] if closed else waypoints
     px, py, _ = truth.pose
     first = min(range(len(ring)), key=lambda i: math.hypot(ring[i][0] - px, ring[i][1] - py))
-    waypoints = [ring[(first + k) % len(ring)] for k in range(len(ring) + 1)]
+    if closed:
+        waypoints = [ring[(first + k) % len(ring)] for k in range(len(ring) + 1)]
+    else:
+        # An OPEN route (the Stage 3 localisation route) is walked once, in
+        # order, and stops at its last waypoint. Wrapping it would drive an
+        # extra leg the experiment is not defined over, and its segments ARE
+        # the experiment, so it is never joined part-way.
+        waypoints = ring[first:]
     print(f"walking the {args.loop} loop from waypoint {first + 1}: {len(waypoints) - 1} legs")
     start = time.time()
     path_len, max_tilt = 0.0, 0.0
@@ -121,6 +133,14 @@ def main():
             cmd.linear.x = MAX_SPEED * max(0.0, math.cos(err)) ** 2
             pub.publish(cmd)
     pub.publish(Twist())
+    if args.final_dwell > 0:
+        # Standing still at the end is a measurement window, not padding: it is
+        # where a localisation estimate is read without any motion in it.
+        print(f"  holding still for {args.final_dwell:.0f} s at the last waypoint")
+        hold = time.time()
+        while time.time() - hold < args.final_dwell:
+            rclpy.spin_once(node, timeout_sec=0.05)
+            pub.publish(Twist())
     dt = time.time() - start
     print(f"\nloop '{args.loop}' walked: {path_len:.1f} m of path in {dt / 60:.1f} min wall, "
           f"max body tilt {math.degrees(max_tilt):.1f} deg")

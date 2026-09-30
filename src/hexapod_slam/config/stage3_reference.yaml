@@ -1,0 +1,66 @@
+# Stage 3 canonical localization reference - the frozen Stage 2.4 map.
+#
+# This file is the repository's record of WHICH map Stage 3 localizes against
+# and what that map must look like. The database itself is a multi-hundred-MB
+# artefact and lives outside git under verification/runs/, so this manifest is
+# how a Stage 3 run is reproducible from a clean checkout.
+#
+# stage3_preflight reads this file and refuses to start an experiment unless
+# every value below matches the database on disk.
+#
+# RULE, learned the hard way (docs/ROADMAP.md Stage 3, and the run directory's
+# REFERENCE_README.md): never snapshot an RTAB-Map database while its process is
+# still writing. The first candidate reference was copied live, passes a size
+# check, and is a malformed SQLite image with an empty visual vocabulary.
+
+stage3_reference:
+  # ---------------------------------------------------------------- identity
+  path: verification/runs/stage2_vo_stage24_texture_20260930_180046/rtabmap_texture_snapshot.db
+  sha256: "8e93c79e50d8a0c9767bfefce8d6490ed996e185684cfbfc5993251aa78de1cc"
+  size_bytes: 387612672
+
+  # ------------------------------------------------- what must be inside it
+  # A reference with no vocabulary cannot relocalise at all: RTAB-Map matches
+  # the live image's visual words against this dictionary. Checking the file
+  # size alone does NOT catch that, which is exactly how the bad candidate got
+  # as far as being proposed.
+  integrity_check: ok
+  vocabulary_words: 5159
+  visual_features: 174973
+  nodes: 587
+  nodes_with_features: 587
+  links_neighbour: 136
+  links_accepted: 69
+
+  # ------------------------------------------------------ what it covers
+  # Decoded from all 587 node poses. The reference holds the ring corridor and
+  # nothing else - the perimeter rooms and the equipment core were only ever
+  # glimpsed through doorways, never entered, so they carry no nodes. Any route
+  # segment outside this box has nothing to localise against.
+  coverage_world:
+    x_min: 3.25
+    x_max: 11.73
+    y_min: 3.02
+    y_max: 7.63
+  # The map was built travelling counter-clockwise, so each node stores one
+  # viewing direction. With an 87 deg camera, recognition needs the live heading
+  # within roughly +/-40 deg of the stored heading - which is why Stage 3 drives
+  # the same direction. Stage 2.4 proved the cost of ignoring this: it produced
+  # zero return-to-start candidates purely because it ended 92 deg off heading.
+  travel_direction: counter-clockwise
+
+  # ------------------------------------------------------------- provenance
+  produced_by: stage2_vo_stage24_texture_20260930_180046
+  produced_on: "2026-09-30"
+  implementation_commits: ["a6275a4", "82301e2"]
+  snapshot_taken: after-clean-shutdown
+  # Recorded so it is never reused by mistake:
+  rejected_candidate:
+    path: verification/runs/stage2_vo_stage24_clean_20260930_142841/rtabmap_baseline_snapshot.db
+    reason: "malformed SQLite image; 0 vocabulary words; copied while rtabmap was writing"
+
+  # ------------------------------------------------------------- handling
+  canonical_mode: "444"            # write-protected; never opened by an experiment
+  per_run_copy: reference.db       # RTAB-Map only ever opens this copy
+  verify_sha_before_run: true
+  verify_sha_after_run: true       # a changed canonical invalidates the run

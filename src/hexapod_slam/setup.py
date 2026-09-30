@@ -28,6 +28,8 @@ setup(
             'reset_run = hexapod_slam.reset_run:main',
             'score_bag = hexapod_slam.score_bag:main',
             'inspect_failure = hexapod_slam.inspect_failure:main',
+            'stage3_preflight = hexapod_slam.stage3_preflight:main',
+            'run_localization_experiment = hexapod_slam.evaluate_localization:main',
         ],
     },
 )

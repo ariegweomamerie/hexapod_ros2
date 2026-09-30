@@ -1,0 +1,56 @@
+# RTAB-Map in LOCALIZATION mode against the frozen Stage 2.4 reference map.
+#
+# Stage 2.4 asked "can this robot build a map?". Stage 3 asks a different
+# question: "given a map it already built, can it work out where it is while
+# walking?". The camera, the odometry and the world are byte-identical to the
+# Stage 2.4 validation run - the ONLY differences from rtabmap.yaml are the
+# memory settings that turn mapping off, and they are listed together below so
+# the delta is auditable.
+#
+# Nothing here tunes the perception stack. Vis/*, Reg/*, RGBD/* and Grid/* are
+# carried over unchanged from the validated Stage 2.4 configuration, because
+# changing them would mean Stage 3 is no longer measuring the same pipeline.
+rtabmap:
+  ros__parameters:
+    use_sim_time: true
+
+    # frames ------------------------------------------------------------------
+    frame_id: base_footprint          # the body RTAB-Map localises
+    map_frame_id: map
+    odom_frame_id: ""                 # empty: take odometry from the /odom TOPIC,
+                                      # so its covariance weights each match
+    publish_tf: true                  # RTAB-Map owns map -> odom, and only that;
+                                      # odom -> base_footprint stays with the odometry
+    wait_for_transform: 0.2
+
+    # input -------------------------------------------------------------------
+    subscribe_depth: true
+    subscribe_rgbd: false
+    subscribe_scan: false             # this robot has no lidar, by design
+    subscribe_scan_cloud: false
+    approx_sync: false                # colour and depth share an exact stamp
+    sync_queue_size: 10
+
+    # ---- THE STAGE 3 DELTA: localisation instead of mapping -----------------
+    # false = do not extend the map. New frames are matched against the loaded
+    # graph and then discarded; no node is added to it. stage3_preflight asserts
+    # this on the LIVE node before any run, and the scorer re-counts the working
+    # copy's nodes and links afterwards, because "we set a parameter" and "the
+    # graph did not grow" are not the same claim.
+    Mem/IncrementalMemory: "false"
+    # Load the whole reference graph into working memory at startup. Without it
+    # RTAB-Map starts with an empty WM and can only recognise places after it has
+    # wandered near them, which would make the first relocalisation depend on
+    # where the robot happened to start.
+    Mem/InitWMWithAllNodes: "true"
+    # -------------------------------------------------------------------------
+
+    # carried over unchanged from the validated Stage 2.4 configuration --------
+    Rtabmap/DetectionRate: "1.0"
+    RGBD/ProximityBySpace: "true"     # recognise a place by revisiting it
+    RGBD/AngularUpdate: "0.05"
+    RGBD/LinearUpdate: "0.05"
+    Reg/Force3DoF: "true"             # the robot walks on a flat floor
+    Optimizer/Slam2D: "true"
+    Grid/FromDepth: "true"
+    Grid/RangeMax: "5.0"

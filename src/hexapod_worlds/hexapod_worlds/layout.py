@@ -267,6 +267,69 @@ def loop_ring():
             (R_OUT[0] + m, R_OUT[1] + m)]
 
 
+def loop_localization():
+    """Stage 3 localisation route: one CCW lap of the ring plus a 4.2 m overlap.
+
+    Open, not closed - the robot finishes part-way along the south leg rather
+    than back at START. Everything about it follows from two properties of the
+    Stage 2.4 reference map (src/hexapod_slam/config/stage3_reference.yaml):
+
+      * it covers the ring corridor and nothing else, so the route never leaves
+        the ring;
+      * it was built travelling counter-clockwise, and each node stores one
+        viewing direction, so the route is walked counter-clockwise too. Stage
+        2.4 showed what ignoring that costs: it ended 92 deg off its starting
+        heading and produced zero return-to-start candidates.
+
+    The overlap is what makes an in-run revisit possible at all. On a
+    one-directional reference the only way to re-see ground at a matching
+    heading is to come round again, so the route continues past START into a
+    second lap. The turn that starts that second lap doubles as the
+    return-to-start heading alignment: the robot arrives at START facing south
+    and leaves it facing east, which is the pose reference node 1 holds.
+
+    Segment labels, lengths and purposes are in SEGMENTS_LOCALIZATION.
+    """
+    m = 0.7
+    return [(R_OUT[0] + m, R_OUT[1] + m),          # START  (3.30, 3.30)
+            (R_OUT[2] - m, R_OUT[1] + m),          # SE     (11.70, 3.30)
+            (R_OUT[2] - m, R_OUT[3] - m),          # NE     (11.70, 7.70)
+            (R_OUT[0] + m, R_OUT[3] - m),          # NW     (3.30, 7.70)
+            (R_OUT[0] + m, R_OUT[1] + m),          # back at START
+            (7.50, R_OUT[1] + m)]                  # overlap end (7.50, 3.30)
+
+
+# Stage 3 scoring segments: (label, description, heading_deg, kind).
+# The scorer assigns every ground-truth sample to one of these by replaying the
+# follower's own waypoint logic, so a window is defined by geometry rather than
+# by wall-clock timing. "revisit" marks ground the robot has already walked in
+# THIS run; every segment is a revisit of the Stage 2.4 reference.
+SEGMENTS_LOCALIZATION = [
+    ("A", "dwell at START",            0.0, "stationary"),
+    ("B", "south leg, eastbound",      0.0, "straight"),
+    ("C", "turn at the SE corner",    45.0, "turn"),
+    ("D", "east leg, northbound",     90.0, "straight"),
+    ("E", "turn at the NE corner",   135.0, "turn"),
+    ("F", "north leg, westbound",    180.0, "straight"),
+    ("G", "turn at the NW corner",   225.0, "turn"),
+    ("H", "west leg, southbound",    270.0, "straight"),
+    ("I", "turn to the START heading", 315.0, "turn"),
+    ("J", "south leg again, eastbound", 0.0, "revisit"),
+    ("K", "dwell at the overlap end",  0.0, "stationary"),
+]
+
+# Scoring windows. L3 and L4 come from ONE physical run (approved A5): the same
+# trajectory is scored twice over disjoint segment windows, so they share every
+# controlled variable instead of differing by run-to-run variation.
+SCORING_WINDOWS = {
+    "L0": ["A"],
+    "L1": ["B"],
+    "L2": ["B", "C", "D", "E", "F", "G"],
+    "L4": ["H", "I"],                  # return-to-start
+    "L3": ["J", "K"],                  # in-run revisit while moving
+}
+
+
 def loop_core():
     """Ring west leg plus the through route across the equipment core (~17 m).
     Inside the core the path runs between the machines and the north-wall props."""
