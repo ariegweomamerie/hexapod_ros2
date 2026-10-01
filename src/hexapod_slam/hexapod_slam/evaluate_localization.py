@@ -76,6 +76,13 @@ INFO_STATS_KEYS = {
     "loop_distance_since_last_loc":  "Loop/Distance_since_last_loc/m",
     "memory_distance_travelled":     "Memory/Distance_travelled/m",
     "proximity_space_paths":         "Proximity/Space_paths/",
+    # Added to close the gaps the MaxOdomCacheSize A/B left open: whether the
+    # odometry cache is the operative mechanism, and whether graph optimization
+    # ran at all. The trailing slash is part of the key - RTABMAP_STATS appends
+    # the unit suffix, empty here - and omitting it silently yields None.
+    "memory_odom_cache_poses":       "Memory/Odom_cache_poses/",
+    "loop_optimization_error":       "Loop/Optimization_error/",
+    "loop_optimization_iterations":  "Loop/Optimization_iterations/",
 }
 
 
@@ -148,6 +155,25 @@ class Recorder(Node):
                       landmark_id=int(m.landmark_id))
         for name, key in INFO_STATS_KEYS.items():
             sample[name] = stats.get(key)
+        # The transform RTAB-Map computed for the accepted localisation, kept as
+        # the message carries it - geometry_msgs/Transform, translation xyz plus
+        # a quaternion - rather than collapsed to a flag. The derived norm and
+        # angle are added alongside, not instead: the A/B run could not tell a
+        # near-identity correction from no correction at all, and that needs the
+        # numbers, not a boolean.
+        tr, rot = m.loop_closure_transform.translation, m.loop_closure_transform.rotation
+        norm = math.sqrt(tr.x * tr.x + tr.y * tr.y + tr.z * tr.z)
+        # angle of the quaternion, guarded against |w| drifting just past 1
+        angle = 2.0 * math.acos(max(-1.0, min(1.0, abs(rot.w))))
+        sample["loop_closure_transform"] = dict(
+            translation=dict(x=tr.x, y=tr.y, z=tr.z),
+            rotation=dict(x=rot.x, y=rot.y, z=rot.z, w=rot.w),
+            translation_norm_m=norm,
+            rotation_angle_deg=math.degrees(angle),
+            is_identity=(norm == 0.0 and rot.x == 0.0 and rot.y == 0.0
+                         and rot.z == 0.0 and rot.w == 1.0),
+            is_near_identity=(norm < 1e-3 and math.degrees(angle) < 0.1),
+        )
         self.info_samples.append(sample)
 
     def _sample_tf(self):
@@ -425,6 +451,29 @@ def summarise_info(samples):
         distance_since_last_loc=rng("loop_distance_since_last_loc"),
         distance_travelled=rng("memory_distance_travelled"),
         proximity_space_paths=rng("proximity_space_paths"),
+        odom_cache_poses=rng("memory_odom_cache_poses"),
+        optimization_error=rng("loop_optimization_error"),
+        optimization_iterations=rng("loop_optimization_iterations"),
+        loop_closure_transform=_transform_summary(samples),
+    )
+
+
+def _transform_summary(samples):
+    """Range of the computed loop-closure transforms, and how many are
+    non-identity. Descriptive only."""
+    tf = [s["loop_closure_transform"] for s in samples
+          if isinstance(s.get("loop_closure_transform"), dict)]
+    if not tf:
+        return None
+    n = [x["translation_norm_m"] for x in tf]
+    a = [x["rotation_angle_deg"] for x in tf]
+    return dict(
+        count=len(tf),
+        translation_norm_m=dict(min=min(n), max=max(n)),
+        rotation_angle_deg=dict(min=min(a), max=max(a)),
+        exact_identity=sum(1 for x in tf if x["is_identity"]),
+        near_identity=sum(1 for x in tf if x["is_near_identity"]),
+        non_identity=sum(1 for x in tf if not x["is_near_identity"]),
     )
 
 
@@ -616,6 +665,15 @@ def main():
               f"{_is['visual_inliers']}")
         print(f"{'   loop / proximity / landmark':34s} {_is['loop_closure_events']} / "
               f"{_is['proximity_events']} / {_is['landmark_events']}")
+        print(f"{'   odom cache poses':34s} {_is['odom_cache_poses']}")
+        print(f"{'   optimization error / iters':34s} {_is['optimization_error']} / "
+              f"{_is['optimization_iterations']}")
+        _tf = _is.get('loop_closure_transform')
+        if _tf:
+            print(f"{'   loop transform |t| (m)':34s} {_tf['translation_norm_m']}")
+            print(f"{'   loop transform angle (deg)':34s} {_tf['rotation_angle_deg']}")
+            print(f"{'   identity / near-id / non-id':34s} {_tf['exact_identity']} / "
+                  f"{_tf['near_identity']} / {_tf['non_identity']}")
     print(f"{'   longest gap between them':34s} "
           f"{c['recognition']['longest_interval_s']} s")
     print(f"{'4. pose consistency':34s} see position/yaw error above")
