@@ -61,6 +61,24 @@ def wrap(a):
     return math.atan2(math.sin(a), math.cos(a))
 
 
+# rtabmap_msgs/msg/Info carries loop_closure_id, proximity_detection_id and
+# landmark_id as real fields; everything else below lives in the stats_keys /
+# stats_values arrays, keyed by these exact strings. Verified against the
+# installed message definition and against a captured /info stream, so these
+# are the emitted names and not aliases.
+INFO_STATS_KEYS = {
+    "loop_highest_hypothesis_id":    "Loop/Highest_hypothesis_id/",
+    "loop_highest_hypothesis_value": "Loop/Highest_hypothesis_value/",
+    "loop_accepted_hypothesis_id":   "Loop/Accepted_hypothesis_id/",
+    "loop_rejected_hypothesis":      "Loop/RejectedHypothesis/",
+    "loop_visual_inliers":           "Loop/Visual_inliers/",
+    "loop_visual_matches":           "Loop/Visual_matches/",
+    "loop_distance_since_last_loc":  "Loop/Distance_since_last_loc/m",
+    "memory_distance_travelled":     "Memory/Distance_travelled/m",
+    "proximity_space_paths":         "Proximity/Space_paths/",
+}
+
+
 class Recorder(Node):
     """Everything the scorer needs, sampled live."""
 
@@ -84,6 +102,11 @@ class Recorder(Node):
         # produced before. Counted over the recorder's lifetime, the same span
         # the recognition count covers, so the two are directly comparable.
         self.info_received = 0
+        # One record per /info message, including the ones carrying no
+        # recognition at all - those are the measurement. Without them a zero
+        # recognition count says nothing about what RTAB-Map was doing while it
+        # produced that zero.
+        self.info_samples = []
 
         q = 20
         self.create_subscription(Odometry, "/odom_ground_truth", self._on_gt, q)
@@ -116,6 +139,16 @@ class Recorder(Node):
             self.events.append((t, "loop_closure", int(m.loop_closure_id)))
         if m.proximity_detection_id > 0:
             self.events.append((t, "proximity", int(m.proximity_detection_id)))
+        # Additive observation only - nothing above this line depends on it.
+        stats = dict(zip(list(m.stats_keys), [float(v) for v in m.stats_values]))
+        sample = dict(stamp=t,
+                      ref_id=int(m.ref_id),
+                      loop_closure_id=int(m.loop_closure_id),
+                      proximity_detection_id=int(m.proximity_detection_id),
+                      landmark_id=int(m.landmark_id))
+        for name, key in INFO_STATS_KEYS.items():
+            sample[name] = stats.get(key)
+        self.info_samples.append(sample)
 
     def _sample_tf(self):
         import rclpy.time
@@ -318,6 +351,8 @@ def score(rec, route, segments, windows, start, experiment):
     else:
         reco = dict(count=0, longest_interval_s=None, unique_reference_nodes=0)
     reco["info_messages_received"] = rec.info_received
+    reco["info_samples"] = rec.info_samples
+    reco["info_summary"] = summarise_info(rec.info_samples)
 
     # map->odom correction magnitude: how far the pose was yanked each time
     jumps = []
@@ -358,6 +393,39 @@ def score(rec, route, segments, windows, start, experiment):
         # is false, and then the robot is dead-reckoning with a map attached.
         localization_actually_recognised=reco["count"] > 0,
     ), rows
+
+
+def summarise_info(samples):
+    """Condense the per-message /info records. Purely descriptive: it reports
+    what was observed and classifies nothing."""
+    if not samples:
+        return dict(count=0)
+    st = [s["stamp"] for s in samples]
+
+    def rng(name):
+        v = [s[name] for s in samples if s.get(name) is not None]
+        return dict(min=min(v), max=max(v)) if v else None
+
+    return dict(
+        count=len(samples),
+        first_stamp=round(min(st), 3),
+        last_stamp=round(max(st), 3),
+        stamp_span_s=round(max(st) - min(st), 3),
+        loop_closure_events=sum(1 for s in samples if s["loop_closure_id"] > 0),
+        proximity_events=sum(1 for s in samples if s["proximity_detection_id"] > 0),
+        landmark_events=sum(1 for s in samples if s["landmark_id"] > 0),
+        accepted_hypothesis_count=sum(
+            1 for s in samples if (s.get("loop_accepted_hypothesis_id") or 0) > 0),
+        rejected_hypothesis_count=sum(
+            1 for s in samples if (s.get("loop_rejected_hypothesis") or 0) > 0),
+        highest_hypothesis_id=rng("loop_highest_hypothesis_id"),
+        highest_hypothesis_value=rng("loop_highest_hypothesis_value"),
+        visual_inliers=rng("loop_visual_inliers"),
+        visual_matches=rng("loop_visual_matches"),
+        distance_since_last_loc=rng("loop_distance_since_last_loc"),
+        distance_travelled=rng("memory_distance_travelled"),
+        proximity_space_paths=rng("proximity_space_paths"),
+    )
 
 
 # ------------------------------------------------------------------- database
@@ -536,6 +604,18 @@ def main():
     print(f"{'3. recognition events':34s} {c['recognition']['count']} "
           f"({c['recognition']['unique_reference_nodes']} distinct reference nodes)")
     print(f"{'   /info messages received':34s} {c['recognition']['info_messages_received']}")
+    _is = c['recognition'].get('info_summary') or {}
+    if _is.get('count'):
+        print(f"{'   /info span':34s} {_is['stamp_span_s']} s "
+              f"({_is['first_stamp']} .. {_is['last_stamp']})")
+        print(f"{'   highest hypothesis id/value':34s} {_is['highest_hypothesis_id']} / "
+              f"{_is['highest_hypothesis_value']}")
+        print(f"{'   accepted / rejected hypoth.':34s} "
+              f"{_is['accepted_hypothesis_count']} / {_is['rejected_hypothesis_count']}")
+        print(f"{'   visual matches / inliers':34s} {_is['visual_matches']} / "
+              f"{_is['visual_inliers']}")
+        print(f"{'   loop / proximity / landmark':34s} {_is['loop_closure_events']} / "
+              f"{_is['proximity_events']} / {_is['landmark_events']}")
     print(f"{'   longest gap between them':34s} "
           f"{c['recognition']['longest_interval_s']} s")
     print(f"{'4. pose consistency':34s} see position/yaw error above")
