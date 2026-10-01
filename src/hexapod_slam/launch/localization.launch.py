@@ -111,12 +111,26 @@ def _prepare(context, *args, **kwargs):
 
     config = os.path.join(get_package_share_directory('hexapod_slam'),
                           'config', 'rtabmap_localization.yaml')
+    # Optional single-parameter override for a controlled experiment. Unset -
+    # the default - the parameter list is exactly what it was before this
+    # argument existed, so the baseline launch path is unchanged. When set, the
+    # file is appended AFTER the config so it overrides, and only the keys it
+    # contains are affected.
+    params = [config, {'database_path': working}]
+    override = LaunchConfiguration('rtabmap_params_file').perform(context).strip()
+    if override:
+        if not os.path.isabs(override):
+            override = os.path.join(WS, override)
+        if not os.path.exists(override):
+            raise RuntimeError(f"rtabmap_params_file does not exist: {override}")
+        params.append(override)
+        print(f"[stage3] rtabmap parameter override: {override}")
     return [Node(
         package='rtabmap_slam',
         executable='rtabmap',
         name='rtabmap',
         output='screen',
-        parameters=[config, {'database_path': working}],
+        parameters=params,
         remappings=[
             ('rgb/image', LaunchConfiguration('rgb_topic')),
             ('depth/image', LaunchConfiguration('depth_topic')),
@@ -138,5 +152,9 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'run_dir',
             description='run directory; the reference working copy is written here'),
+        DeclareLaunchArgument(
+            'rtabmap_params_file', default_value='',
+            description='optional ROS 2 parameter file layered over '
+                        'rtabmap_localization.yaml; empty means no override'),
         OpaqueFunction(function=_prepare),
     ])

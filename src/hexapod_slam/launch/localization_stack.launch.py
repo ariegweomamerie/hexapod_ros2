@@ -39,6 +39,11 @@ def generate_launch_description():
         DeclareLaunchArgument('headless', default_value='false'),
         DeclareLaunchArgument('rviz', default_value='true'),
         DeclareLaunchArgument('localization', default_value='true'),
+        # Forwarded to localization.launch.py. Empty by default, so leaving it
+        # alone reproduces the baseline launch exactly; it exists only so a
+        # controlled single-parameter experiment can be run through the normal
+        # launch procedure rather than a different one.
+        DeclareLaunchArgument('rtabmap_params_file', default_value=''),
 
         include(os.path.join(worlds_share, 'launch', 'slam_world.launch.py'),
                 headless=LaunchConfiguration('headless'),
@@ -54,6 +59,9 @@ def generate_launch_description():
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     os.path.join(slam_share, 'launch', 'localization.launch.py')),
-                launch_arguments={'run_dir': LaunchConfiguration('run_dir')}.items(),
+                launch_arguments={
+                    'run_dir': LaunchConfiguration('run_dir'),
+                    'rtabmap_params_file':
+                        LaunchConfiguration('rtabmap_params_file')}.items(),
                 condition=IfCondition(LaunchConfiguration('localization')))]),
     ])
