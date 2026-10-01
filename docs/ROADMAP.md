@@ -26,7 +26,7 @@ Verification scripts live in [`verification/`](../verification/README.md), one p
 |------:|------|--------|
 | 1 | Stable basic gait | ✅ **Passed** 2026-09-29 — 75/75 checks, twice (see Stage 1) |
 | 2 | SLAM | ✅ **Passed** 2026-09-30 — 2.1, 2.2, 2.3, 2.4 all verified (Stage 2.4 ring: 25.19 m, 0 lost frames, ATE 0.276 m, 2.13%/m, 137-pose connected graph; see Stage 2.4) |
-| 3 | Localization | ⬜ Not started |
+| 3 | Localization | 🔶 **In verification** — L0 static validated 2026-10-01: a known +0.10 m pose offset is corrected to ~0.96 mm, 13/13 hypotheses accepted (see Stage 3). L1+ motion not yet tested |
 | 4 | Nav2 | ⬜ Not started |
 | 5 | Navigation tuning | ⬜ Not started |
 | 6 | Head controller | 🔷 Built early (see Stage 6) — frozen until its turn |
@@ -430,6 +430,156 @@ to any collision geometry. Measurements in
   2.4 ring finishes ~92° off its starting heading and cannot present that
   match; the Stage 2.4 route is left unchanged so its validation run stays
   reproducible.
+
+### Stage 3 L0 — known-pose-offset experiment (static, 2026-10-01)
+
+**Why this experiment exists.** Every earlier Stage 3 L0 run spawned the robot
+at world (3.300, 3.300), which *is* the reference map's origin. With the robot
+standing exactly where the map says the map begins, a perfect localization
+correction and no correction at all produce the same numbers: `map → odom`
+measured 1.2e-07 m and `pos_err` measured 1.4e-05 m, and neither value could
+be read as evidence either way. Both were tautologies of the geometry, not
+measurements of the localizer. The experiment removes the tautology by moving
+the robot a known distance away from the map origin and asking whether
+RTAB-Map puts it back.
+
+**Design.** Two runs, taken 15 minutes apart on the same host, identical in
+every respect except the spawn pose:
+
+| | control | offset |
+|---|---|---|
+| run | `verification/runs/stage3_L0_offset0_control_20261001_141040/` | `verification/runs/stage3_L0_offset10cm_20261001_142636/` |
+| `spawn_offset_x` | 0.00 m (argument not passed) | **0.10 m** |
+| everything else | world, robot, camera, odometry, controllers, RTAB-Map config, `RGBD/MaxOdomCacheSize=1`, frozen reference, scorer, `--settle 30`, shutdown | identical |
+
+The spawn offset is introduced by a launch argument (`3471caa`), not by editing
+`START`. `START` is also the scorer's frame anchor for its map→world
+conversion, so changing it would have moved the spawn and the measuring stick
+together and cancelled the effect. The offset is therefore the single
+experimental variable; the live 516-entry parameter dump differs between the
+two runs only in `database_path`. Preflight passed 20/20 mandatory and 2/2
+advisory on both.
+
+**The offset was confirmed independently, from `/odom_ground_truth`, not from
+the launch argument:**
+
+| | control | offset | difference |
+|---|---|---|---|
+| ground-truth x | 3.299987542 m | 3.399987791 m | **+0.100000249 m** |
+| ground-truth y | 3.299993039 m | 3.299993428 m | +0.000000388 m |
+
+The commanded 0.10 m was delivered to within 2.5e-07 m, on one axis.
+
+#### Where the displacement appeared
+
+Measured on all three edges with a full-precision TF2 listener, 414 samples.
+The design did **not** assume the answer; `rgbd_odometry`'s initialization
+behaviour had been inferred from configuration, never tested.
+
+| edge | control | offset |
+|---|---|---|
+| `map → odom` | 1.2489e-07 m | **9.9525e-02 m** |
+| `odom → base_footprint` | 1.0024e-07 m | **1.6049e-07 m** |
+| `map → base_footprint` | 1.1348e-07 m | **9.9524e-02 m** |
+
+`odom → base_footprint` did not move. The whole displacement appeared in
+`map → odom`, the edge RTAB-Map owns. This confirms experimentally that
+`rgbd_odometry` initialises `odom` at the robot's spawn pose, which until now
+was an assumption. The sign is also right, not only the magnitude: `map_y =
+−0.0995` decodes through `world_x = START_x − map_y` to world x ≈ 3.3995,
+which is where the robot physically was.
+
+![Where the offset appears in the TF tree](images/stage3/stage3_frame_test.png)
+
+#### Measured response
+
+| Measurement | control (0.00 m) | offset (0.10 m) |
+|---|---:|---:|
+| loop-closure translation | 2.68635e-08 m | **0.0993457 .. 0.0999339 m** |
+| loop-closure rotation | 0.0° | 0.00400663 .. 0.015051° |
+| identity / near-identity / non-identity | 0 / 15 / 0 | **0 / 0 / 13** |
+| `map → odom` corrections | 0 | **13**, largest step 0.001 m |
+| optimization error | 8.6274e-09 | 4.0981e-04 .. 6.6876e-03 |
+| optimization iterations | 1 | 2 .. 6 |
+| odometry cache poses | 2 | 2 |
+| accepted / rejected hypotheses | 15 / 0 | **13 / 0** |
+| highest hypothesis value | 0.994358 | 0.978548 |
+| visual matches | 427 | 187 .. 192 |
+| visual inliers | 424 | 143 .. 153 |
+| samples / localised | 785 / 785 | 779 / 779 |
+| `/info` messages received | 15 | 13 |
+
+![Loop-closure translation per /info message](images/stage3/stage3_loop_closure_translation.png)
+
+#### Two independent position measurements, in agreement
+
+| | TF-derived pose vs ground truth | scorer `pos_err` RMS |
+|---|---:|---:|
+| control | 1.428331e-05 m | 1.428331e-05 m |
+| **offset** | **9.173794e-04 m** | **9.607894e-04 m** |
+
+These are independent: one composes the TF tree and decodes `map →
+base_footprint` into world coordinates, the other is the scorer's own
+comparison against `/odom_ground_truth`. On the offset run they agree to
+within 4% of a sub-millimetre quantity. What they agree on is the point —
+**0.96 mm, not 100 mm.** Had the localizer not corrected, both would read
+≈ 0.10 m, because `odom → base_footprint` stayed at identity and the error
+would have had nowhere else to go.
+
+![pos_err: the offset was absorbed, not carried](images/stage3/stage3_pos_err.png)
+
+#### Reference integrity
+
+The canonical reference was never opened by either run; each copies it to
+`<run>/reference.db` first, and the launch refuses to start unless size,
+sha256, SQLite integrity and vocabulary all match the manifest.
+
+| | |
+|---|---|
+| frozen reference sha256 | `9366c429b55820086405263d28f80146243d914b37c54ee0e91ef6bc460e4a93` — unchanged before and after both runs |
+| mode / mtime | `444`, mtime still 2026-09-30 23:27:26 — never written |
+| working copy node growth | 587 → 587 (**+0**) |
+| working copy link growth | 792 / 136 neighbour / 69 accepted (**+0 / +0 / +0**) |
+| working copy dictionary growth | 35907 words, 174973 features (**+0 / +0**) |
+| working copy integrity | `ok` |
+
+#### What this establishes, and what it does not
+
+**Establishes:** for this configuration, RTAB-Map localization produces a real
+correction. A known 10 cm offset is recognised, carried in the loop-closure
+transform, optimised into the pose graph and published on `map → odom`, and
+the robot's estimated pose ends up within about 1 mm of ground truth. It
+follows that the ~1e-7 m `map → odom` values measured at the nominal spawn
+were **numerical residue**, not a correction — the same pipeline produces
+1e-1 m when there is something real to correct.
+
+**Validates specifically:** the **static +0.10 m known-pose offset under the
+tested configuration**. Nothing wider.
+
+**Does not establish:** general localization robustness, the maximum offset
+the method tolerates, motion robustness, dynamic relocalization performance,
+or behaviour at larger offsets. Those are later experiments.
+
+**Observed, recorded neutrally:** feature matching fell substantially when
+viewing from 10 cm off the mapped pose — matches 427 → 187..192 and inliers
+424 → 143..153, with the highest hypothesis value 0.994 → 0.979. Recognition
+remained intact throughout: 13 of 13 hypotheses accepted, 0 rejected, 779 of
+779 samples localised. This is recorded as measured behaviour, not as a
+failure, and it is the kind of quantity a later offset-magnitude experiment
+would be designed around.
+
+#### The measurement chain had to be repaired first
+
+Three earlier L0 reports claimed "0 recognition events". The scorer was
+subscribed to `/rtabmap/info`, which does not exist — the topic is `/info`, so
+no messages were arriving at all and the reports described the scorer's own
+defect. Those three runs' recognition findings are retracted. The chain was
+then rebuilt one reviewed commit at a time: correct topic (`ba191df`), a
+received-message counter so silence can never again be misread as absence
+(`0448867`), per-message internal state (`0535eb7`), a parameter-override path
+so a single parameter can be varied through the normal launch
+procedure (`6c147f9`), and the loop-closure transform, odometry-cache and
+optimization state (`3f5be56`) that this experiment reads.
 
 ## Stage 4 — Nav2
 
