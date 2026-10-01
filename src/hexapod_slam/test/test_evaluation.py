@@ -6,6 +6,7 @@ answer we already know, so a number in the Stage 2.3 report means what it says.
 import math
 
 from hexapod_slam.evaluate_odometry import align_ground_truth, resample, yaw_of
+from hexapod_slam.evaluate_localization import _transform_summary, describe_transform
 
 
 class Q:
@@ -52,3 +53,57 @@ def test_a_perfect_odometry_scores_zero_error():
     a = align_ground_truth(gt)
     err = [math.hypot(v[1] - g[1], v[2] - g[2]) for v, g in zip(a, resample(a, [p[0] for p in a]))]
     assert max(err) == 0.0
+
+
+# --- loop-closure transform classification (Stage 3 L1 instrumentation) -----
+# L1 reported loop rotations "up to 180 deg". They were not rotations: 61 of
+# its 153 /info messages carried an all-zero quaternion - RTAB-Map's "no
+# transform" - and 2*acos(|0|) renders that as exactly 180 deg. These three
+# cases pin the distinction the scorer has to keep.
+
+class V:
+    def __init__(self, x=0.0, y=0.0, z=0.0):
+        self.x, self.y, self.z = x, y, z
+
+
+class Quat:
+    def __init__(self, x=0.0, y=0.0, z=0.0, w=1.0):
+        self.x, self.y, self.z, self.w = x, y, z, w
+
+
+def test_null_transform_is_not_a_180_degree_rotation():
+    d = describe_transform(V(), Quat(0.0, 0.0, 0.0, 0.0))
+    assert d["is_null"] is True
+    assert d["rotation_angle_deg"] is None          # never 180.0
+    assert d["is_identity"] is False
+    assert d["is_near_identity"] is False
+
+
+def test_real_identity_transform_is_identity():
+    d = describe_transform(V(), Quat(0.0, 0.0, 0.0, 1.0))
+    assert d["is_null"] is False
+    assert abs(d["rotation_angle_deg"]) < 1e-9
+    assert d["is_identity"] is True
+    assert d["is_near_identity"] is True
+
+
+def test_real_non_identity_transform_reports_its_angle():
+    # 30 deg about z, 0.5 m along x
+    d = describe_transform(V(0.5), Quat(0.0, 0.0, math.sin(math.radians(15)),
+                                        math.cos(math.radians(15))))
+    assert d["is_null"] is False
+    assert abs(d["rotation_angle_deg"] - 30.0) < 1e-9
+    assert d["is_identity"] is False
+    assert d["is_near_identity"] is False
+    assert abs(d["translation_norm_m"] - 0.5) < 1e-12
+
+
+def test_summary_counts_nulls_separately_and_keeps_them_out_of_the_ranges():
+    tf = [describe_transform(V(), Quat(0.0, 0.0, 0.0, 0.0)),
+          describe_transform(V(0.5), Quat(0.0, 0.0, math.sin(math.radians(15)),
+                                          math.cos(math.radians(15))))]
+    s = _transform_summary([{"loop_closure_transform": x} for x in tf])
+    assert s["count"] == 2 and s["null"] == 1
+    assert abs(s["rotation_angle_deg"]["min"] - 30.0) < 1e-9
+    assert abs(s["translation_norm_m"]["min"] - 0.5) < 1e-12   # not the null's 0.0
+    assert s["non_identity"] == 1

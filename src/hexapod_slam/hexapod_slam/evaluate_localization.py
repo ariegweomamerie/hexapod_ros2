@@ -61,6 +61,33 @@ def wrap(a):
     return math.atan2(math.sin(a), math.cos(a))
 
 
+def describe_transform(tr, rot):
+    """One loop-closure transform, classified: null, identity, or a real one.
+
+    An all-zero quaternion is RTAB-Map's "no transform", not a rotation: it is
+    not a unit quaternion at all, and 2*acos(|0|) renders it as exactly 180 deg.
+    That is how the L1 run came to report a 180 deg loop rotation that never
+    happened - 61 of its 153 /info messages carried one, none of them accepted.
+    A null is therefore reported with no angle, and is neither identity nor
+    near-identity, so the three cases stay distinguishable.
+    """
+    norm = math.sqrt(tr.x * tr.x + tr.y * tr.y + tr.z * tr.z)
+    is_null = (rot.x == 0.0 and rot.y == 0.0 and rot.z == 0.0 and rot.w == 0.0)
+    # angle of the quaternion, guarded against |w| drifting just past 1
+    angle = None if is_null else math.degrees(
+        2.0 * math.acos(max(-1.0, min(1.0, abs(rot.w)))))
+    return dict(
+        translation=dict(x=tr.x, y=tr.y, z=tr.z),
+        rotation=dict(x=rot.x, y=rot.y, z=rot.z, w=rot.w),
+        translation_norm_m=norm,
+        rotation_angle_deg=angle,
+        is_null=is_null,
+        is_identity=(norm == 0.0 and rot.x == 0.0 and rot.y == 0.0
+                     and rot.z == 0.0 and rot.w == 1.0),
+        is_near_identity=(not is_null and norm < 1e-3 and angle < 0.1),
+    )
+
+
 # rtabmap_msgs/msg/Info carries loop_closure_id, proximity_detection_id and
 # landmark_id as real fields; everything else below lives in the stats_keys /
 # stats_values arrays, keyed by these exact strings. Verified against the
@@ -161,19 +188,8 @@ class Recorder(Node):
         # angle are added alongside, not instead: the A/B run could not tell a
         # near-identity correction from no correction at all, and that needs the
         # numbers, not a boolean.
-        tr, rot = m.loop_closure_transform.translation, m.loop_closure_transform.rotation
-        norm = math.sqrt(tr.x * tr.x + tr.y * tr.y + tr.z * tr.z)
-        # angle of the quaternion, guarded against |w| drifting just past 1
-        angle = 2.0 * math.acos(max(-1.0, min(1.0, abs(rot.w))))
-        sample["loop_closure_transform"] = dict(
-            translation=dict(x=tr.x, y=tr.y, z=tr.z),
-            rotation=dict(x=rot.x, y=rot.y, z=rot.z, w=rot.w),
-            translation_norm_m=norm,
-            rotation_angle_deg=math.degrees(angle),
-            is_identity=(norm == 0.0 and rot.x == 0.0 and rot.y == 0.0
-                         and rot.z == 0.0 and rot.w == 1.0),
-            is_near_identity=(norm < 1e-3 and math.degrees(angle) < 0.1),
-        )
+        sample["loop_closure_transform"] = describe_transform(
+            m.loop_closure_transform.translation, m.loop_closure_transform.rotation)
         self.info_samples.append(sample)
 
     def _sample_tf(self):
@@ -465,15 +481,21 @@ def _transform_summary(samples):
           if isinstance(s.get("loop_closure_transform"), dict)]
     if not tf:
         return None
-    n = [x["translation_norm_m"] for x in tf]
-    a = [x["rotation_angle_deg"] for x in tf]
+    # Null transforms are counted, never averaged: they carry no angle, and
+    # their zero translation is an absence rather than a measurement. Folding
+    # them in is what made the L1 summary report both a 180 deg rotation and a
+    # 0.0 m minimum translation that no accepted transform ever had.
+    real = [x for x in tf if not x.get("is_null")]
+    n = [x["translation_norm_m"] for x in real]
+    a = [x["rotation_angle_deg"] for x in real]
     return dict(
         count=len(tf),
-        translation_norm_m=dict(min=min(n), max=max(n)),
-        rotation_angle_deg=dict(min=min(a), max=max(a)),
-        exact_identity=sum(1 for x in tf if x["is_identity"]),
-        near_identity=sum(1 for x in tf if x["is_near_identity"]),
-        non_identity=sum(1 for x in tf if not x["is_near_identity"]),
+        null=sum(1 for x in tf if x.get("is_null")),
+        translation_norm_m=(dict(min=min(n), max=max(n)) if n else None),
+        rotation_angle_deg=(dict(min=min(a), max=max(a)) if a else None),
+        exact_identity=sum(1 for x in real if x["is_identity"]),
+        near_identity=sum(1 for x in real if x["is_near_identity"]),
+        non_identity=sum(1 for x in real if not x["is_near_identity"]),
     )
 
 
@@ -672,8 +694,9 @@ def main():
         if _tf:
             print(f"{'   loop transform |t| (m)':34s} {_tf['translation_norm_m']}")
             print(f"{'   loop transform angle (deg)':34s} {_tf['rotation_angle_deg']}")
-            print(f"{'   identity / near-id / non-id':34s} {_tf['exact_identity']} / "
-                  f"{_tf['near_identity']} / {_tf['non_identity']}")
+            print(f"{'   null / id / near-id / non-id':34s} {_tf['null']} / "
+                  f"{_tf['exact_identity']} / {_tf['near_identity']} / "
+                  f"{_tf['non_identity']}")
     print(f"{'   longest gap between them':34s} "
           f"{c['recognition']['longest_interval_s']} s")
     print(f"{'4. pose consistency':34s} see position/yaw error above")
