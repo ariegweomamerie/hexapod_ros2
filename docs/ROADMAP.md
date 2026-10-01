@@ -26,7 +26,7 @@ Verification scripts live in [`verification/`](../verification/README.md), one p
 |------:|------|--------|
 | 1 | Stable basic gait | ✅ **Passed** 2026-09-29 — 75/75 checks, twice (see Stage 1) |
 | 2 | SLAM | ✅ **Passed** 2026-09-30 — 2.1, 2.2, 2.3, 2.4 all verified (Stage 2.4 ring: 25.19 m, 0 lost frames, ATE 0.276 m, 2.13%/m, 137-pose connected graph; see Stage 2.4) |
-| 3 | Localization | 🔶 **In verification** — L0 static validated 2026-10-01: a known +0.10 m pose offset is corrected to ~0.96 mm, 13/13 hypotheses accepted (see Stage 3). L1+ motion not yet tested |
+| 3 | Localization | 🔶 **In verification** — L0 static validated 2026-10-01 (a known +0.10 m pose offset corrected to ~0.96 mm, 13/13 accepted). L1 motion validated the same day: full 29.80 m route walked, segment B 100% localized at 0.039 m RMS. **Blocked at the NW corner** — visual odometry fails there and does not recover, so L2/L3/L4 are held (see Stage 3) |
 | 4 | Nav2 | ⬜ Not started |
 | 5 | Navigation tuning | ⬜ Not started |
 | 6 | Head controller | 🔷 Built early (see Stage 6) — frozen until its turn |
@@ -580,6 +580,150 @@ received-message counter so silence can never again be misread as absence
 so a single parameter can be varied through the normal launch
 procedure (`6c147f9`), and the loop-closure transform, odometry-cache and
 optimization state (`3f5be56`) that this experiment reads.
+
+### Stage 3 L1 — localization under motion (2026-10-01)
+
+Run: `verification/runs/stage3_L1_20261001_144802/`. One run, `spawn_offset_x=0.0`,
+`RGBD/MaxOdomCacheSize=1` — the same validated protocol as the static work, with
+motion as the only change. Pre-run gates: HEAD `091b272`, tree clean, live
+516-entry parameter dump differing from the static control in `database_path`
+alone, reference sha256 `9366c429…`, mode `444`, scorer instrumentation present,
+exactly one follower, preflight 20/20 mandatory and 2/2 advisory.
+
+**L1 is the segment-B scoring window of the full facility drive, not a short
+isolated drive.** `--experiment L1` runs `drive_facility_loop --loop localization`,
+which walks the whole A–K route; the `experiment` argument only labels the run and
+picks which window is reported. The scorer computes every window from the same
+data, so one drive populates L1, L2, L4 and L3 at once.
+
+#### Execution
+
+| | |
+|---|---|
+| route | completed — ended (7.272, 3.194), 0.252 m from the final waypoint (7.50, 3.30), inside the 0.35 m `REACHED` tolerance |
+| distance actually walked in Gazebo | **29.32 m** (planned 29.80 m; the follower cuts corners within tolerance) |
+| duration | **195.9 s** simulated, **9796** samples |
+| follower | **exit code 0**, exactly one follower, no stall, no timeout |
+| recognition events | **169**, across 74 distinct reference nodes, from 153 `/info` messages |
+| reference graph growth | **zero** — 587 nodes, 792 / 136 / 69 links |
+| dictionary growth | **zero** — 35907 words, 174973 features |
+| frozen reference sha256 | `9366c429b55820086405263d28f80146243d914b37c54ee0e91ef6bc460e4a93`, unchanged; mode `444`, mtime untouched |
+
+Whole-run figures: 7144 / 9796 samples localised (72.9%), position RMS 0.2597 m,
+max 0.9744 m, yaw RMS 12.542°, max 82.5314°. 82 `map→odom` corrections, largest
+1.1828 m / 34.229°. These aggregate the healthy and failed halves of the route and
+are not a performance figure for any one condition.
+
+#### Per segment
+
+| seg | description | samples | localised | pos RMS | pos max | yaw RMS | recog | VO-lost |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| A | dwell at START | 885 | 99.8% | 0.000 | 0.009 | 0.01° | 32 | 0 |
+| **B** | **south leg eastbound — the L1 window** | **2271** | **100.0%** | **0.039** | **0.354** | **1.37°** | **43** | **0** |
+| C | SE turn | 224 | 100.0% | 0.158 | 0.450 | 11.24° | 3 | 0 |
+| D | east leg northbound | 1056 | 100.0% | 0.241 | 0.697 | 2.73° | 25 | 0 |
+| E | NE turn | 222 | 100.0% | 0.098 | 0.163 | 4.17° | 5 | 0 |
+| F | north leg westbound | 2182 | 100.0% | 0.288 | 0.726 | 3.45° | 33 | 101 |
+| G | NW turn | 215 | 100.0% | 0.839 | 0.876 | 46.78° | 2 | 215 |
+| H | west leg southbound | 1058 | 8.6% | 0.919 | 0.974 | 80.04° | 26 | 1058 |
+| I | turn to the START heading | 218 | 0.0% | — | — | — | 0 | 218 |
+| J | south leg revisit | 1052 | 0.0% | — | — | — | 0 | 1052 |
+| K | dwell at the overlap end | 413 | 0.0% | — | — | — | 0 | 413 |
+
+Scoring windows: L0 [A] 885 samples 99.8% RMS 0.0003 · **L1 [B] 2271 samples 100.0%
+RMS 0.0390 max 0.3544 yaw RMS 1.3683** · L2 [BCDEFG] 6170 samples 100.0% RMS 0.2562 ·
+L4 [HI] 1276 samples 7.1% RMS 0.9187 · L3 [JK] 1465 samples 0.0%.
+
+#### The L1 window in detail
+
+| | |
+|---|---|
+| samples / localised | **2271 / 2271 (100.0%)** |
+| ground truth | (3.311, 3.300) → (11.367, 3.189), 8.06 m, t+17.7 .. t+63.1 s |
+| position error | mean 0.0229 m, **RMS 0.0390 m**, max 0.3544 m |
+| yaw error | mean 0.815°, **RMS 1.3683°**, max 10.189° |
+| recognition | **43 events**, longest interval **8.91 s**, median 1.06 s |
+| `/info` | 39 messages — 24 with an accepted hypothesis, 15 without |
+| VO-lost frames | **0** |
+| TF availability | `map→odom`, `odom→base_footprint`, `map→base_footprint` all **2271 / 2271** |
+| `map→odom` | 0.0000 .. 0.1813 m, mean 0.0384 m |
+| `map→odom` corrections | **24**, largest **0.1304 m**, median 0.0059 m |
+
+On the accepted hypotheses in B: matches 95–304 (median 208), inliers 53–174
+(median 120), loop translation 0.0355–0.5227 m, loop rotation 0.002–0.595°,
+optimization 1–6 iterations. The longest gap of the whole run, 8.91 s, fell early
+in B at t+20.5 → t+29.4 s between (3.81, 3.29) and (5.39, 3.27).
+
+#### Where it degraded
+
+Degradation begins in **F** and becomes total at **G**:
+
+| | |
+|---|---|
+| first lost frame | t+134.8 s, segment **F** |
+| position | **(3.989, 7.801)**, heading **−91.2°** — 0.696 m from the NW corner waypoint (3.30, 7.70) |
+| recovery | **none** — 0 of the following 3056 frames regained tracking |
+| last valid localization pose | t+142.5 s, segment H, (3.354, 7.129), position error 0.943 m |
+| longest VO outage | 63.228 s, 414 lost frames; longest TF outage 53.4 s |
+
+H dropped to 8.6% localised, and I, J and K produced no localization pose at all.
+This is the NW corner recorded in `KNOWN_ISSUES.md` §2 — the camera 0.060 m off the
+floor facing a flat kick plate. The Stage 2.4 decal was sufficient for that run; it
+was not sufficient here. **The failure is unresolved**, and L2, L3 and L4 all cross
+that corner, so they stay blocked until it is characterised.
+
+#### This is real Gazebo motion
+
+Challenged during the run by an observation that RViz appeared to show motion while
+the Gazebo robot looked stationary. Diagnosed in
+`verification/runs/diag_gz_rviz_20261001_152043/` with nothing modified:
+
+1. **L1 is valid Gazebo motion evidence.** The Gazebo server received no signal and
+   ran throughout — `Received signal` appears 0 times in the L1, offset and control
+   launch logs.
+2. **RViz was not driven by ground truth.** `ros_gz_bridge_gazebo.yaml` bridges
+   `/odom_ground_truth` one-way `GZ_TO_ROS` and deliberately does **not** bridge
+   `odom → base_footprint`; simulator poses never enter TF.
+3. **Gazebo and ROS ground truth agree exactly.** Read directly from Gazebo
+   transport, the model pose was x 3.2999878698759124 before and 3.9912791906938931
+   after a 15 s walk, matching `/odom_ground_truth` digit for digit.
+4. **RViz motion came from `rgbd_odometry` plus RTAB-Map's `map→odom`.** Over a
+   controlled walk, Gazebo's physical model travelled 0.6518 m and TF travelled
+   0.6597 m — agreement to **7.9 mm**, with joints swinging 20.17° / 27.94° / 25.57°
+   and the camera streaming 201 frames at 15.2 Hz.
+5. **The stationary-looking Gazebo view was a camera-follow difference, not a
+   simulation-state problem.** RViz's active view is an Orbit named "Chase" with
+   `Target Frame: base_footprint`, so its camera follows the robot. Gazebo's GUI
+   camera sat fixed at (3.107, 4.658, 0.564) with `/gui/currently_tracked` empty,
+   so 0.65 m of travel across a 12 × 8 m facility is barely visible.
+6. **The NW-corner VO failure is a genuine perception failure** and is the one place
+   where the Gazebo → sensors → SLAM/TF → RViz chain really did break: after
+   t+134.8 s `odom → base_footprint` froze while the robot kept walking.
+
+#### Not a regression against the static experiment
+
+L1's 0.0390 m window RMS and the static run's 1.428331e-05 m are **different
+conditions**, not a before-and-after. The static runs stood still at the mapped
+origin; B is 8 m of walking. The fair within-run control is this run's own dwell A:
+885 samples, 99.8% localised, 0.0003 m RMS, which reproduces the static result.
+
+#### Known instrumentation limitation (scorer, not the robot)
+
+The scorer's summary reports loop-transform rotation up to 180°. That figure is an
+artefact and does not describe any robot motion:
+
+* **61 of 153** `/info` messages carry an all-zero quaternion `(0, 0, 0, 0)` —
+  RTAB-Map's null/empty transform.
+* The scorer computes `2·acos(|w|)`, which turns `w = 0` into exactly 180°.
+* All 61 have translation exactly 0.0 and **none** has an accepted hypothesis.
+* On accepted hypotheses only, loop rotation is **0.0008 .. 3.6326°**.
+* `is_identity` and `is_near_identity` share the blind spot: they classify a null
+  transform as near-identity.
+
+Every static run had 100% acceptance, so this never surfaced before. **The recorded
+L1 measurements stand as produced and have not been recomputed**; only the
+loop-transform rotation statistics that mix in null transforms carry this known
+limitation, and the accepted-hypothesis figures above are unaffected.
 
 ## Stage 4 — Nav2
 
