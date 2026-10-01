@@ -12,7 +12,7 @@ from launch import LaunchDescription
 from launch.actions import AppendEnvironmentVariable, DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.conditions import IfCondition
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 
 from hexapod_worlds.layout import START
@@ -42,6 +42,11 @@ def generate_launch_description():
         # TF tree, the map and what the perception stack believes. rviz:=false
         # turns it off for headless or benchmark runs.
         DeclareLaunchArgument('rviz', default_value='true'),
+        # Metres added to the spawn X only. 0.0 - the default - reproduces the
+        # START pose exactly, so every existing run is unaffected. It exists so a
+        # known pose offset can be introduced through the normal launch path
+        # without touching START, which the scorer also reads as its frame anchor.
+        DeclareLaunchArgument('spawn_offset_x', default_value='0.0'),
         # let Gazebo find model://pillar, model://slam_assets/... and friends
         AppendEnvironmentVariable('GZ_SIM_RESOURCE_PATH', os.path.join(worlds_share, 'models')),
         IncludeLaunchDescription(
@@ -51,7 +56,9 @@ def generate_launch_description():
                 'world': world,
                 'headless': LaunchConfiguration('headless'),
                 'render_engine_server': LaunchConfiguration('render_engine_server'),
-                'x': str(START['x']),
+                'x': PythonExpression(
+                    ['round(', str(START['x']), ' + ',
+                     LaunchConfiguration('spawn_offset_x'), ', 6)']),
                 'y': str(START['y']),
                 'z': '0.32',
                 'yaw': str(START['yaw']),

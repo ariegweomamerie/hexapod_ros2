@@ -44,10 +44,14 @@ def generate_launch_description():
         # controlled single-parameter experiment can be run through the normal
         # launch procedure rather than a different one.
         DeclareLaunchArgument('rtabmap_params_file', default_value=''),
+        # Forwarded to slam_world.launch.py. 0.0 by default, which spawns the
+        # robot at START exactly as before.
+        DeclareLaunchArgument('spawn_offset_x', default_value='0.0'),
 
         include(os.path.join(worlds_share, 'launch', 'slam_world.launch.py'),
                 headless=LaunchConfiguration('headless'),
-                rviz=LaunchConfiguration('rviz')),
+                rviz=LaunchConfiguration('rviz'),
+                spawn_offset_x=LaunchConfiguration('spawn_offset_x')),
 
         TimerAction(period=12.0, actions=[
             include(os.path.join(gait_share, 'launch', 'gait.launch.py'))]),
