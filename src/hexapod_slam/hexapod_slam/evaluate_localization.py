@@ -78,6 +78,12 @@ class Recorder(Node):
         self.tf_avail = []      # (t, map->odom, odom->base, map->base)
         self.map_odom = []      # (t, x, y, yaw)              the correction itself
         self.events = []        # (t, kind, id)
+        # How many /info messages actually reached the callback. Without it,
+        # "recognition events: 0" cannot be told apart from "no message ever
+        # arrived" - which is exactly what a subscription to the wrong topic
+        # produced before. Counted over the recorder's lifetime, the same span
+        # the recognition count covers, so the two are directly comparable.
+        self.info_received = 0
 
         q = 20
         self.create_subscription(Odometry, "/odom_ground_truth", self._on_gt, q)
@@ -104,6 +110,7 @@ class Recorder(Node):
         self.vo_lost.append((t, m.pose.covariance[0] >= LOST_COVARIANCE))
 
     def _on_info(self, m):
+        self.info_received += 1
         t = m.header.stamp.sec + m.header.stamp.nanosec * 1e-9
         if m.loop_closure_id > 0:
             self.events.append((t, "loop_closure", int(m.loop_closure_id)))
@@ -310,6 +317,7 @@ def score(rec, route, segments, windows, start, experiment):
                     unique_reference_nodes=len({e[2] for e in ev}))
     else:
         reco = dict(count=0, longest_interval_s=None, unique_reference_nodes=0)
+    reco["info_messages_received"] = rec.info_received
 
     # map->odom correction magnitude: how far the pose was yanked each time
     jumps = []
@@ -527,6 +535,7 @@ def main():
           f"({c['vo_lost_frames']} lost frames)")
     print(f"{'3. recognition events':34s} {c['recognition']['count']} "
           f"({c['recognition']['unique_reference_nodes']} distinct reference nodes)")
+    print(f"{'   /info messages received':34s} {c['recognition']['info_messages_received']}")
     print(f"{'   longest gap between them':34s} "
           f"{c['recognition']['longest_interval_s']} s")
     print(f"{'4. pose consistency':34s} see position/yaw error above")
