@@ -661,7 +661,9 @@ Degradation begins in **F** and becomes total at **G**:
 | | |
 |---|---|
 | first lost frame | t+134.8 s, segment **F** |
-| position | **(3.989, 7.801)**, heading **−91.2°** — 0.696 m from the NW corner waypoint (3.30, 7.70) |
+| position | **(3.989, 7.801)** — 0.696 m from the NW corner waypoint (3.30, 7.70), 1.309 m from the west wall face |
+| orientation | body yaw −91.2°, so travel heading **+178.8° — due west**. `gt_yaw` is the body yaw and the robot faces its own −Y, so `heading = body_yaw − 90°` |
+| the turn had not started | heading held a constant 178.8° from t+120 to t+136.5 s; the turn began at t+137.5 s, **2.7 s after VO was already lost** |
 | recovery | **none** — 0 of the following 3056 frames regained tracking |
 | last valid localization pose | t+142.5 s, segment H, (3.354, 7.129), position error 0.943 m |
 | longest VO outage | 63.228 s, 414 lost frames; longest TF outage 53.4 s |
