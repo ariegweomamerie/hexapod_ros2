@@ -41,7 +41,7 @@ from hexapod_slam.evaluate_odometry import LOST_COVARIANCE, yaw_of
 WS = "/home/general/hexapod_ros_robot_ws"
 BAG_TOPICS = ["/face_camera/image", "/face_camera/depth_image", "/face_camera/camera_info",
               "/odom", "/odom_ground_truth", "/tf", "/tf_static", "/cmd_vel", "/clock",
-              "/joint_states", "/imu", "/rtabmap/info", "/localization_pose",
+              "/joint_states", "/imu", "/info", "/localization_pose",
               "/map", "/mapPath"]
 
 # The reference map's frame is the Stage 2.4 run's start pose: base_footprint at
@@ -84,7 +84,7 @@ class Recorder(Node):
         self.create_subscription(Odometry, "/odom", self._on_odom, q)
         try:
             from rtabmap_msgs.msg import Info
-            self.create_subscription(Info, "/rtabmap/info", self._on_info, q)
+            self.create_subscription(Info, "/info", self._on_info, q)
             self.have_info = True
         except Exception:
             self.have_info = False
